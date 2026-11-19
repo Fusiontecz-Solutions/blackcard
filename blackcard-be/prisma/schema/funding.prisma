@@ -1,0 +1,30 @@
+model Funding {
+  id               Int            @id @default(autoincrement())
+  fundedAmount     Float
+  fundingDate      DateTime
+  fundingStatus    String
+  applicationId    String         @unique @db.Uuid
+  contractId       Int            @unique
+  fundingPaymentId Int            @unique
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  application      Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  contract         Contract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  fundingPayment   FundingPayment @relation(fields: [fundingPaymentId], references: [id], onDelete: Cascade)
+}
+
+model FundingPayment {
+  id              Int      @id @default(autoincrement())
+  paymentAmount   Float
+  paymentDate     DateTime
+  paymentType     String
+  paymentMethod   String
+  status          String
+  referenceNumber String?
+  parentId        String?
+  subId           String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  funding         Funding?
+}

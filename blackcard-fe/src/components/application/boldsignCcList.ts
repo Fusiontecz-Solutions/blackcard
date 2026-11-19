@@ -1,0 +1,21 @@
+/** @deprecated Import from `./docusignCcList` instead. */
+export {
+    BOLDSIGN_CC_LIST_STORAGE_KEY,
+    DEFAULT_CONTRACT_CC_EMAIL,
+    DOCUSIGN_DEFAULT_CC_EMAIL,
+    getTenantDefaultContractCcEmail,
+    getTenantResolvedContractCcEmails,
+    setTenantDefaultContractCcEmail,
+    isDefaultCcEmail,
+    isDefaultCcEmail as isDefaultContractCcEmail,
+    isReservedContractCcEmail,
+    loadBoldSignCcEmailList,
+    loadBoldSignCcEmailList as loadContractCcEmailList,
+    mergeWithDefaultCcEmails,
+    mergeWithDefaultCcEmails as mergeContractCcEmailList,
+    resolveContractDefaultCcEmails,
+    saveBoldSignCcEmailList,
+    CONTRACT_CC_EMAILS_PREFILL_KEY,
+    mergeContractPrefillWithCcEmails,
+    parseContractCcEmailsFromPrefill,
+} from "./docusignCcList";

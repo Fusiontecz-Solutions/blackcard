@@ -1,0 +1,32 @@
+{
+  "name": "Texas ACH Authorization (page 11 coordinates)",
+  "documentName": "TEXAS FUNDING GROUP- BLANK FILLABLE ACH.pdf",
+  "pageCount": 1,
+  "tabs": {
+    "textTabs": [
+      {"tabLabel": "client_legal_name", "pageNumber": "1", "xPosition": "286", "yPosition": "86", "tabType": "text", "width": "170", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "ach_authorization_account_holder_bank_name", "pageNumber": "1", "xPosition": "130", "yPosition": "155", "tabType": "text", "width": "170", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "ach_authorization_account_holder_bank_branch_city", "pageNumber": "1", "xPosition": "432", "yPosition": "151", "tabType": "text", "width": "70", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "ach_authorization_account_holder_bank_state", "pageNumber": "1", "xPosition": "507", "yPosition": "152", "tabType": "text", "width": "35", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "ach_authorization_account_holder_bank_zip", "pageNumber": "1", "xPosition": "439", "yPosition": "169", "tabType": "text", "width": "60", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "ach_authorization_account_holder_name", "pageNumber": "1", "xPosition": "130", "yPosition": "173", "tabType": "text", "width": "170", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "ach_authorization_account_holder_bank_routing_number", "pageNumber": "1", "xPosition": "130", "yPosition": "191", "tabType": "text", "width": "120", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "ach_authorization_account_holder_bank_account_number", "pageNumber": "1", "xPosition": "422", "yPosition": "188", "tabType": "text", "width": "120", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "frequency", "pageNumber": "1", "xPosition": "81", "yPosition": "325", "tabType": "text", "width": "60", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "remittance", "pageNumber": "1", "xPosition": "273", "yPosition": "325", "tabType": "text", "width": "90", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "client_legal_name_p11_footer", "pageNumber": "1", "xPosition": "101", "yPosition": "548", "tabType": "text", "width": "220", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "federal_tax_id_EIN", "pageNumber": "1", "xPosition": "438", "yPosition": "547", "tabType": "text", "width": "100", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "seller_1_name", "pageNumber": "1", "xPosition": "115", "yPosition": "602", "tabType": "text", "width": "150", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "seller_2_name", "pageNumber": "1", "xPosition": "373", "yPosition": "602", "tabType": "text", "width": "150", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "discover_owner2_title", "pageNumber": "1", "xPosition": "397", "yPosition": "615", "tabType": "text", "width": "120", "height": "19", "required": "false", "locked": "false", "fontSize": "size9"},
+      {"tabLabel": "agreement_date_owner1_p11", "pageNumber": "1", "xPosition": "89", "yPosition": "635", "tabType": "text", "width": "80", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"},
+      {"tabLabel": "agreement_date_owner2_p11", "pageNumber": "1", "xPosition": "349", "yPosition": "636", "tabType": "text", "width": "80", "height": "19", "required": "false", "locked": "true", "fontSize": "size9"}
+    ],
+    "signHereTabs": [
+      {"tabLabel": "client_legal_name_sign_p11", "pageNumber": "1", "xPosition": "106", "yPosition": "565", "tabType": "signhere", "name": "SignHere"},
+      {"tabLabel": "seller_2_sign_p11", "pageNumber": "1", "xPosition": "368", "yPosition": "564", "tabType": "signhereoptional", "name": "SignHereOptional", "optional": "true", "required": "false"}
+    ],
+    "initialHereTabs": [],
+    "dateSignedTabs": []
+  }
+}

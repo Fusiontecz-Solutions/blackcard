@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "IsoApplicationPayout" ADD COLUMN IF NOT EXISTS "scheduledPayDate" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "paidAt" TIMESTAMP(3);

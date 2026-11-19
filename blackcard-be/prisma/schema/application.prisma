@@ -1,0 +1,1136 @@
+model User {
+  id                         String                        @id @default(uuid()) @db.Uuid
+  userId                     Int                           @unique @default(autoincrement())
+  firstName                  String
+  lastName                   String
+  email                      String
+  phone                      String?
+  password                   String
+  isVerified                 Boolean                       @default(false)
+  isActive                   Boolean                       @default(true)
+  otp                        Int                           @default(0)
+  otpExpiry                  Int                           @default(0)
+  role                       Role
+  profilePicture             String?
+  lastSeenAt                 DateTime?
+  createdAt                  DateTime                      @default(now())
+  updatedAt                  DateTime                      @updatedAt
+  docusignAccessToken        String?
+  docusignAccountId          String?
+  docusignBaseUri            String?
+  docusignRefreshToken       String?
+  docusignTokenExpiry        DateTime?
+  googleRefreshToken         String?
+  gmailAutoCreateEnabled     Boolean                       @default(true)
+  gmailAutoCreateEnabledAt   DateTime?
+  accessTokens               AccessToken[]
+  underwriterApprovedApps    Application[]                 @relation("ApplicationApprovedByUnderwriter")
+  underwriterAssignedApps    Application[]                 @relation("ApplicationAssignedUnderwriter")
+  underwriterClaimedApps     Application[]                 @relation("ApplicationClaimedByUnderwriter")
+  createdApplications        Application[]                 @relation("ApplicationCreatedBy")
+  deletedApplications        Application[]                 @relation("ApplicationDeletedBy")
+  scrubberReturnedApps       Application[]                 @relation("ApplicationReturnedToScrubber")
+  underwriterReturnedApps    Application[]                 @relation("ApplicationReturnedByUnderwriter")
+  referringApplications      Application[]                 @relation("ApplicationReferringAgent")
+  salesApplications          Application[]                 @relation("ApplicationSalesRep")
+  ApplicationActivityLog     ApplicationActivityLog[]
+  applicationQuestionUpdates ApplicationQuestionResponse[] @relation("ApplicationQuestionUpdatedBy")
+  BankAnalysis               BankAnalysis[]
+  bankDetails                BankDetail[]
+  channelMemberships         ChannelMember[]
+  receivedChannelMessages    ChannelMessage[]              @relation("ChannelMessageReceiver")
+  sentChannelMessages        ChannelMessage[]              @relation("ChannelMessageSender")
+  assignedClients            Client[]                      @relation("ClientAssignedTo")
+  createdClients             Client[]                      @relation("ClientCreatedBy")
+  CollectionPayment          CollectionPayment[]
+  CollectionPaymentUploadJob CollectionPaymentUploadJob[]
+  comments                   Comment[]
+  complianceChecks           ComplianceCheck[]
+  createdContracts           Contract[]                    @relation("ContractCreatedBy")
+  contractTemplates          ContractTemplate[]
+  createdConversations       Conversation[]                @relation("ConversationCreatedBy")
+  conversations              ConversationParticipant[]
+  FundingCall                FundingCall[]
+  gmailAutoCreateLedger      GmailAutoCreateLedger[]
+  googleOAuths               GoogleOAuth?
+  sentMessages               Message[]                     @relation("MessageSender")
+  messageReactions           MessageReactionUser[]
+  messageReads               MessageRead[]
+  months                     Month[]
+  notes                      Note[]
+  notificationsSent          Notification[]                @relation("NotificationCreatedBy")
+  notificationsTo            Notification[]                @relation("NotificationRecipient")
+  offerDecisions             OfferDecision[]
+  paymentMailLogsCreated     PaymentMailLog[]              @relation("PaymentMailLogCreatedBy")
+  PaymentTemplate            PaymentTemplate[]
+  positions                  Position[]
+  SchedulePaymentTracking    SchedulePaymentTracking[]
+  syndicator                 Syndicator?
+  termsOffers                TermsOffer[]
+  typingIndicators           TypingIndicator[]
+  verificationTokens         VerificationToken[]
+  outbound_communications    outbound_communications[]
+}
+
+model AccessToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String
+  userId    String   @db.Uuid
+  tokenType String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String
+  userId    String   @db.Uuid
+  role      String?
+  tokenType String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Client {
+  id                         String           @id @default(uuid()) @db.Uuid
+  clientId                   Int              @unique @default(autoincrement())
+  businessName               String
+  businessEmail              String?
+  businessNumber             String?
+  businessWebsite            String?
+  businessIncorporationDate  DateTime?
+  businessIncorporationState String?
+  businessEntityType         String?
+  businessEinNumber          String?
+  businessAnnualRevenue      Float?
+  businessMonthlyRevenue     Float?
+  businessAddress1           String?
+  businessAddress2           String?
+  businessCity               String?
+  businessState              String?
+  businessZipCode            String?
+  ownerFirstName             String
+  ownerMiddleName            String?
+  ownerLastName              String
+  ownerEmail                 String?
+  ownerMobileNumber          String?
+  ownerDateOfBirth           DateTime?
+  ownerSsn                   String?
+  ownerFicoScore             Int?
+  ownerOwnershipStartDate    DateTime?
+  ownerOwnershipPercentage   Float?
+  ownerAddress1              String?
+  ownerAddress2              String?
+  ownerCity                  String?
+  ownerState                 String?
+  ownerZipCode               String?
+  status                     String           @default("Pending")
+  notes                      String?
+  createdById                String?          @db.Uuid
+  assignedToId               String?          @db.Uuid
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+  driverLicense              String?
+  achs                       ACH[]
+  addendums                  Addendum[]
+  applications               Application[]
+  assignedTo                 User?            @relation("ClientAssignedTo", fields: [assignedToId], references: [id])
+  createdBy                  User?            @relation("ClientCreatedBy", fields: [createdById], references: [id])
+  ClientBankInfo             ClientBankInfo[]
+  owners                     ClientOwner[]
+  contracts                  Contract[]
+  contractClients            ContractClient[]
+  epos                       EPO[]
+  fileMetadata               FileMetadata[]
+
+  @@index([status])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([businessName])
+  @@index([businessEmail])
+  @@index([ownerEmail])
+}
+
+model ClientOwner {
+  id                  String    @id @default(uuid()) @db.Uuid
+  clientId            String    @db.Uuid
+  sortOrder           Int       @default(0)
+  firstName           String
+  middleName          String?
+  lastName            String
+  email               String?
+  mobileNumber        String?
+  dateOfBirth         DateTime?
+  ssn                 String?
+  ficoScore           Int?
+  ownershipStartDate  DateTime?
+  ownershipPercentage Float?
+  address1            String?
+  address2            String?
+  city                String?
+  state               String?
+  zipCode             String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  client              Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([ssn])
+}
+
+model DocumentRequest {
+  id            Int            @id @default(autoincrement())
+  name          String?
+  note          String
+  status        RequestStatus  @default(CREATED)
+  applicationId String?        @db.Uuid
+  stipulationId Int
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  Application   Application?   @relation(fields: [applicationId], references: [id])
+  Stipulation   Stipulation    @relation(fields: [stipulationId], references: [id])
+  documents     FileMetadata[] @relation("DocumentRequestFiles")
+}
+
+model Application {
+  id                              String                        @id @default(uuid()) @db.Uuid
+  applicationId                   Int                           @unique @default(autoincrement())
+  priority                        String
+  type                            String                        @default("New")
+  referringAgentId                String?                       @db.Uuid
+  salesRepresentativeId           String                        @db.Uuid
+  clientId                        String                        @db.Uuid
+  createdById                     String?                       @db.Uuid
+  loanAmount                      Float?
+  note                            String?                       @default("")
+  currentQueue                    String                        @default("New")
+  documentChecklistChecked        String[]                      @default([])
+  createdAt                       DateTime                      @default(now())
+  updatedAt                       DateTime                      @updatedAt
+  currentState                    String                        @default("Draft")
+  isoId                           String?                       @db.Uuid
+  commissionPercentage            Float                         @default(0)
+  commissionAmount                Float?
+  dealDisplayName                 String?
+  dealId                          String?
+  status                          String?
+  claimedByUnderwriterId          String?                       @db.Uuid
+  claimedAt                       DateTime?
+  approvedByUnderwriterId         String?                       @db.Uuid
+  approvedAt                      DateTime?
+  /// Last action an Underwriter performed on this deal: "Approved By UW", "Decline by UW", "Final Approved by UW".
+  underwriterAction               String?
+  assignedUnderwriterId           String?                       @db.Uuid
+  /// Tab that sent the deal to Final Approval: "Decision Logic" or "Funding Call".
+  finalApprovalSource             String?
+  category                        String?
+  organization                    String?
+  underwriterCommissionAmount     Float?
+  /// Per-deal underwriter commission rate (0–100), distinct from ISO `commissionPercentage`.
+  underwriterCommissionPercentage Float                         @default(0)
+  brokerCommissionAmount          Float?
+  /// Per-deal broker commission rate (0–100), set at disbursement; distinct from ISO profile default.
+  brokerCommissionPercentage      Float                         @default(0)
+  /// Ops-entered broker name at disbursement; not tied to referringAgent.
+  brokerName                      String?
+  /// Underwriter marked the ISO comment thread as resolved — hides deal from ISO Query pipeline until a new ISO comment arrives.
+  isoQueryResolved                Boolean                       @default(false)
+  /// ISO approved the updated offer while {@link needsContractReinitiation} is true.
+  isoUpdatedOfferApproved         Boolean                       @default(false)
+  /// True when UW updated the offer after a contract was generated — requires ISO re-approval and contract regeneration.
+  needsContractReinitiation       Boolean                       @default(false)
+  /// Scrubber's recommendation from the compliance-check modal: "Recommend Approval" or "Recommend Decline".
+  scrubberRecommendation          String?
+  /// Ops-entered underwriter name at disbursement when not linked to a user record.
+  underwriterCommissionName       String?
+  /// Soft-delete timestamp — deal appears in Recently Deleted until restored or permanently removed.
+  deletedAt                       DateTime?
+  deletedById                     String?                       @db.Uuid
+  /// True when another live deal shares the same client EIN or owner SSN (identity dedupe).
+  isDuplicate                     Boolean                       @default(false)
+  /// Scrubber the Underwriter sent this deal back to for correction; cleared when the scrubber resends.
+  returnedToScrubberId            String?                       @db.Uuid
+  /// Underwriter who sent the deal back for correction; the corrected deal returns to this person.
+  returnedByUnderwriterId         String?                       @db.Uuid
+  /// When the Underwriter sent the deal back for correction.
+  returnedToScrubberAt            DateTime?
+  /// Underwriter's correction reasons, "|||"-delimited (same encoding as scrubber decline reasons).
+  returnReasons                   String?
+  /// Underwriter's free-text note describing what the scrubber must correct.
+  returnNote                      String?
+  approvedByUnderwriter           User?                         @relation("ApplicationApprovedByUnderwriter", fields: [approvedByUnderwriterId], references: [id])
+  assignedUnderwriter             User?                         @relation("ApplicationAssignedUnderwriter", fields: [assignedUnderwriterId], references: [id])
+  claimedByUnderwriter            User?                         @relation("ApplicationClaimedByUnderwriter", fields: [claimedByUnderwriterId], references: [id])
+  client                          Client                        @relation(fields: [clientId], references: [id])
+  createdBy                       User?                         @relation("ApplicationCreatedBy", fields: [createdById], references: [id])
+  deletedBy                       User?                         @relation("ApplicationDeletedBy", fields: [deletedById], references: [id])
+  returnedToScrubber              User?                         @relation("ApplicationReturnedToScrubber", fields: [returnedToScrubberId], references: [id])
+  returnedByUnderwriter           User?                         @relation("ApplicationReturnedByUnderwriter", fields: [returnedByUnderwriterId], references: [id])
+  iso                             Iso?                          @relation(fields: [isoId], references: [id])
+  referringAgent                  User?                         @relation("ApplicationReferringAgent", fields: [referringAgentId], references: [id])
+  salesRepresentative             User                          @relation("ApplicationSalesRep", fields: [salesRepresentativeId], references: [id])
+  ApplicationActivityLog          ApplicationActivityLog[]
+  files                           ApplicationFile[]
+  questionResponses               ApplicationQuestionResponse[]
+  backgroundCheck                 BackgroundCheck?
+  BankAnalysis                    BankAnalysis[]
+  bankDetails                     BankDetail[]
+  businessInfo                    BusinessInfo?
+  ClientBankInfo                  ClientBankInfo[]
+  CollectionPayment               CollectionPayment[]
+  comments                        Comment[]
+  complianceChecks                ComplianceCheck[]
+  contract                        Contract?
+  conversations                   Conversation[]
+  disclosures                     Disclosure?
+  document                        Document?
+  documentRequests                DocumentRequest[]
+  FinalAnswer                     FinalAnswer[]
+  fundings                        Funding?
+  FundingCall                     FundingCall[]
+  FundingInfo                     FundingInfo?
+  gmailAutoCreateLedger           GmailAutoCreateLedger[]
+  isoApplicationPayouts           IsoApplicationPayout[]
+  isoCommissionSchedules          IsoCommissionSchedule[]
+  months                          Month[]
+  notes                           Note[]
+  notifications                   Notification[]
+  OfferDecision                   OfferDecision?
+  offers                          Offers[]
+  paymentMailLogs                 PaymentMailLog[]
+  positions                       Position[]
+  PublicApprovalToken             PublicApprovalToken[]
+  SchedulePaymentTracking         SchedulePaymentTracking[]
+  scheduledRePayments             ScheduledRePayment[]
+  termsOffers                     TermsOffer[]
+  outbound_communications         outbound_communications[]
+  syndicator                      Syndicator[]                  @relation("ApplicationSyndicators")
+
+  @@index([isoId])
+  @@index([dealId])
+  @@index([currentQueue, currentState])
+  @@index([createdAt])
+  @@index([currentQueue, createdAt])
+  @@index([referringAgentId])
+  @@index([createdById])
+  @@index([claimedByUnderwriterId])
+  @@index([currentQueue, claimedByUnderwriterId])
+  @@index([approvedByUnderwriterId])
+  @@index([assignedUnderwriterId])
+  @@index([currentQueue, assignedUnderwriterId])
+  @@index([returnedToScrubberId])
+  @@index([category])
+  @@index([deletedAt])
+  @@index([deletedById])
+  @@index([isDuplicate])
+}
+
+/// Per-application DocuSign / contract business fields (1:1 with Application)
+model BusinessInfo {
+  id                  Int         @id @default(autoincrement())
+  applicationId       String      @unique @db.Uuid
+  state               String
+  funderName          String
+  frequency           String
+  clientBusinessName  String
+  clientBusinessEmail String
+  payoff              String      @default("")
+  addendum            Boolean     @default(false)
+  epo                 Boolean     @default(false)
+  ach                 Boolean     @default(false)
+  achRows             ACH[]       @relation("ACHBusinessInfo")
+  addendumRows        Addendum[]  @relation("AddendumBusinessInfo")
+  application         Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  epoRows             EPO[]       @relation("EPOBusinessInfo")
+
+  @@index([applicationId])
+}
+
+model ApplicationFile {
+  id                    String      @id @default(uuid()) @db.Uuid
+  applicationId         String      @db.Uuid
+  url                   String
+  publicId              String
+  originalName          String?
+  mimeType              String?
+  size                  Int?
+  uploadedAt            DateTime    @default(now())
+  requestedDocumentSlug String?
+  application           Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+  @@index([requestedDocumentSlug])
+}
+
+model FundingInfo {
+  id                              Int         @id @default(autoincrement())
+  purchasePrice                   String
+  factorRate                      String
+  revenuePurchased                String
+  originationFee                  String
+  brokerFeePaidByClient           String
+  brokerFeePaidByFunder           String
+  amountPaidToPriorMcaFundingReFi String      @default("")
+  thirdPartyPayment               String      @default("")
+  applicationId                   String      @unique @db.Uuid
+  application                     Application @relation(fields: [applicationId], references: [id])
+}
+
+model ContractTemplate {
+  id           String   @id @default(uuid()) @db.Uuid
+  url          String
+  publicId     String
+  originalName String?
+  uploadedById String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  layoutKey    String   @default("contract")
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+
+  @@index([uploadedById])
+  @@index([createdAt])
+}
+
+model CommissionRequest {
+  id                   String    @id @default(uuid()) @db.Uuid
+  applicationId        String
+  agentId              String
+  companyDeal          String
+  firstName            String
+  lastName             String
+  phoneNumber          String?
+  email                String
+  fundingAmount        Float
+  syndicatorId         String?
+  commissionPercentage Float
+  status               String    @default("Pending")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  reason               String?
+  approvedAt           DateTime?
+  rejectedAt           DateTime?
+}
+
+model BankDetail {
+  id            String      @id @default(uuid()) @db.Uuid
+  bankName      String
+  accountNumber String
+  applicationId String      @db.Uuid
+  createdById   String      @db.Uuid
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  routingNumber String?
+  application   Application @relation(fields: [applicationId], references: [id])
+  createdBy     User        @relation(fields: [createdById], references: [id])
+  contracts     Contract[]
+
+  @@index([applicationId])
+  @@index([createdById])
+}
+
+model Comment {
+  id            String      @id @default(uuid()) @db.Uuid
+  commentId     Int         @unique @default(autoincrement())
+  applicationId String      @db.Uuid
+  createdById   String?     @db.Uuid
+  content       String
+  isEdited      Boolean     @default(false)
+  isDeleted     Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  type          String      @default("Internal Comment")
+  application   Application @relation(fields: [applicationId], references: [id])
+  createdBy     User?       @relation(fields: [createdById], references: [id])
+
+  @@index([applicationId])
+  @@index([createdById])
+}
+
+model ComplianceCheck {
+  id            String      @id @default(uuid()) @db.Uuid
+  question      String
+  answer        String
+  reason        String?
+  signature     String?
+  date          String?
+  applicationId String      @db.Uuid
+  createdById   String      @db.Uuid
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  application   Application @relation(fields: [applicationId], references: [id])
+  createdBy     User        @relation(fields: [createdById], references: [id])
+
+  @@index([applicationId])
+  @@index([createdById])
+}
+
+model Month {
+  id            String               @id @default(uuid()) @db.Uuid
+  monthName     String
+  date          DateTime
+  amount        Float
+  applicationId String               @db.Uuid
+  createdById   String               @db.Uuid
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  application   Application          @relation(fields: [applicationId], references: [id])
+  createdBy     User                 @relation(fields: [createdById], references: [id])
+  transactions  MonthlyTransaction[]
+
+  @@index([applicationId])
+  @@index([createdById])
+}
+
+model MonthlyTransaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  monthId   String   @db.Uuid
+  category  String
+  amount    Float
+  notes     String?  @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  month     Month    @relation(fields: [monthId], references: [id])
+
+  @@index([monthId])
+}
+
+model Note {
+  id            String      @id @default(uuid()) @db.Uuid
+  noteId        Int         @unique @default(autoincrement())
+  content       String
+  applicationId String      @db.Uuid
+  createdById   String      @db.Uuid
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  application   Application @relation(fields: [applicationId], references: [id])
+  createdBy     User        @relation(fields: [createdById], references: [id])
+
+  @@index([applicationId])
+  @@index([createdById])
+}
+
+model Notification {
+  id                         String       @id @default(uuid()) @db.Uuid
+  title                      String
+  message                    String
+  type                       String       @default("other")
+  recipientId                String       @db.Uuid
+  applicationId              String?      @db.Uuid
+  documentRequestedDocuments String[]     @default([])
+  documentRequestAdditional  Boolean      @default(false)
+  isRead                     Boolean      @default(false)
+  readAt                     DateTime?
+  createdById                String?      @db.Uuid
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
+  actionUrl                  String?
+  bucket                     String       @default("inbox")
+  category                   String       @default("system")
+  importance                 String       @default("normal")
+  isArchived                 Boolean      @default(false)
+  snoozedUntil               DateTime?
+  application                Application? @relation(fields: [applicationId], references: [id])
+  createdBy                  User?        @relation("NotificationCreatedBy", fields: [createdById], references: [id])
+  recipient                  User         @relation("NotificationRecipient", fields: [recipientId], references: [id])
+
+  @@index([recipientId, isRead])
+  @@index([applicationId])
+  @@index([createdAt])
+  @@index([recipientId, bucket])
+  @@index([recipientId, importance])
+  @@index([recipientId, category])
+}
+
+model Position {
+  id                      String      @id @default(uuid()) @db.Uuid
+  positionId              Int         @unique @default(autoincrement())
+  position                String
+  factorRate              String
+  ach                     String
+  percentOfGross          String
+  funder                  String
+  paybackAmount           Float
+  fundingDate             DateTime?
+  activeStatus            Boolean     @default(false)
+  fundedAmount            Float
+  frequency               String
+  closeDate               DateTime?
+  notes                   String?     @default("")
+  applicationId           String      @db.Uuid
+  createdById             String?     @db.Uuid
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  status                  String?
+  loanAmount              Float?
+  paymentTerm             Int?
+  mcaEstBalance           Float?
+  mcaPercentPaid          Float?
+  pmtsLeft                Int?
+  monthlyMcaPmts          Float?
+  carryForward            Float?
+  mcaRemit                Float?
+  lastPaymentDate         DateTime?
+  allocatedBankAnalysisId Int?
+  application             Application @relation(fields: [applicationId], references: [id])
+  createdBy               User?       @relation(fields: [createdById], references: [id])
+
+  @@index([applicationId])
+  @@index([createdById])
+  @@index([activeStatus])
+}
+
+model TermsOffer {
+  id                  String               @id @default(uuid()) @db.Uuid
+  termsOfferId        Int                  @unique @default(autoincrement())
+  approvedAmount      Float
+  factorRate          Float
+  paybackAmount       Float
+  numberOfPayments    Int
+  offerExpiryDate     DateTime
+  termLength          Int
+  commissionPercent   Float
+  paymentAmount       Float
+  percentOfGross      Float
+  frequency           String
+  buyRate             Float
+  commissionAmount    Float
+  position            String
+  paymentSchedule     String
+  paymentDays         String[]             @default([])
+  applicationId       String               @db.Uuid
+  createdById         String?              @db.Uuid
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  contractId          Int?
+  docuSignEnvelopes   DocuSignEnvelope[]
+  scheduledRePayments ScheduledRePayment[]
+  application         Application          @relation(fields: [applicationId], references: [id])
+  contracts           Contract?            @relation(fields: [contractId], references: [id])
+  createdBy           User?                @relation(fields: [createdById], references: [id])
+
+  @@index([applicationId])
+  @@index([createdById])
+}
+
+model ApplicationQuestionResponse {
+  id            String      @id @default(uuid()) @db.Uuid
+  applicationId String      @db.Uuid
+  questionId    String
+  questionText  String
+  answer        String
+  reason        String?     @default("")
+  updatedById   String      @db.Uuid
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  application   Application @relation(fields: [applicationId], references: [id])
+  updatedBy     User        @relation("ApplicationQuestionUpdatedBy", fields: [updatedById], references: [id])
+
+  @@unique([applicationId, questionId])
+  @@index([updatedById])
+}
+
+model Conversation {
+  id               String                    @id @default(uuid()) @db.Uuid
+  type             ConversationType
+  name             String?
+  applicationId    String?                   @db.Uuid
+  createdById      String                    @db.Uuid
+  isArchived       Boolean                   @default(false)
+  isDeleted        Boolean                   @default(false)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  application      Application?              @relation(fields: [applicationId], references: [id])
+  createdBy        User                      @relation("ConversationCreatedBy", fields: [createdById], references: [id])
+  participants     ConversationParticipant[]
+  messages         Message[]
+  typingIndicators TypingIndicator[]
+
+  @@index([type])
+  @@index([applicationId])
+  @@index([createdById])
+  @@index([isArchived, isDeleted])
+}
+
+model ConversationParticipant {
+  id             String          @id @default(uuid()) @db.Uuid
+  conversationId String          @db.Uuid
+  userId         String          @db.Uuid
+  role           ParticipantRole @default(MEMBER)
+  lastReadAt     DateTime?
+  joinedAt       DateTime        @default(now())
+  conversation   Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id                    String           @id @default(uuid()) @db.Uuid
+  conversationId        String           @db.Uuid
+  senderId              String           @db.Uuid
+  content               String
+  messageType           MessageType      @default(TEXT)
+  replyToId             String?          @db.Uuid
+  isEdited              Boolean          @default(false)
+  isDeleted             Boolean          @default(false)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  lastMessageForChannel Channel[]        @relation("ChannelLastMessage")
+  attachments           ChatAttachment[]
+  conversation          Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyTo               Message?         @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies               Message[]        @relation("MessageReplies")
+  sender                User             @relation("MessageSender", fields: [senderId], references: [id])
+  messageReads          MessageRead[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([replyToId])
+  @@index([isDeleted])
+}
+
+model MessageRead {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @db.Uuid
+  userId    String   @db.Uuid
+  readAt    DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+  @@index([messageId])
+}
+
+model ChatAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @db.Uuid
+  url       String
+  publicId  String
+  fileName  String
+  fileType  String
+  fileSize  Int
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model TypingIndicator {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  userId         String       @db.Uuid
+  isTyping       Boolean      @default(true)
+  updatedAt      DateTime     @default(now()) @updatedAt
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+}
+
+model Channel {
+  id            String           @id @default(uuid()) @db.Uuid
+  name          String
+  type          ChannelType      @default(channel)
+  isPrivate     Boolean          @default(false)
+  lastMessageId String?          @db.Uuid
+  lastMessageAt DateTime?
+  dmId          String?          @unique
+  createdAt     DateTime         @default(now())
+  lastMessage   Message?         @relation("ChannelLastMessage", fields: [lastMessageId], references: [id])
+  members       ChannelMember[]
+  messages      ChannelMessage[]
+}
+
+model ChannelMember {
+  id        String  @id @default(uuid()) @db.Uuid
+  channelId String  @db.Uuid
+  userId    String  @db.Uuid
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([userId])
+}
+
+model ChannelMessage {
+  id          String              @id @default(uuid()) @db.Uuid
+  channelId   String?             @db.Uuid
+  senderId    String              @db.Uuid
+  receiverId  String?             @db.Uuid
+  message     String              @default("")
+  type        MessageContentType  @default(text)
+  messageType ChannelMessageType
+  replyToId   String?             @db.Uuid
+  createdAt   DateTime            @default(now())
+  channel     Channel?            @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  receiver    User?               @relation("ChannelMessageReceiver", fields: [receiverId], references: [id])
+  replyTo     ChannelMessage?     @relation("MessageReply", fields: [replyToId], references: [id])
+  replies     ChannelMessage[]    @relation("MessageReply")
+  sender      User                @relation("ChannelMessageSender", fields: [senderId], references: [id])
+  attachments MessageAttachment[]
+  reactions   MessageReaction[]
+
+  @@index([channelId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([replyToId])
+  @@index([createdAt])
+}
+
+model MessageReaction {
+  id        String                @id @default(uuid()) @db.Uuid
+  messageId String                @db.Uuid
+  emoji     String
+  message   ChannelMessage        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  users     MessageReactionUser[]
+
+  @@unique([messageId, emoji])
+}
+
+model MessageReactionUser {
+  id         String          @id @default(uuid()) @db.Uuid
+  reactionId String          @db.Uuid
+  userId     String          @db.Uuid
+  reaction   MessageReaction @relation(fields: [reactionId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reactionId, userId])
+  @@index([userId])
+}
+
+model MessageAttachment {
+  id        String         @id @default(uuid()) @db.Uuid
+  messageId String         @db.Uuid
+  name      String?
+  type      String?
+  url       String?
+  createdAt DateTime       @default(now())
+  message   ChannelMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model GoogleOAuth {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @db.Uuid
+  email        String
+  refreshToken String
+  scope        String?
+  tokenType    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+model Document {
+  id                Int         @id @default(autoincrement())
+  applicationId     String      @unique @db.Uuid
+  envelopeId        String      @unique
+  status            String
+  sentAt            DateTime?
+  completedAt       DateTime?
+  /// Cloudinary URL for the signed combined PDF (avoids re-hitting DocuSign after complete).
+  signedPdfUrl      String?
+  signedPdfPublicId String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  userId            Int
+  application       Application @relation(fields: [applicationId], references: [id])
+}
+
+model Addendum {
+  id                    Int           @id @default(autoincrement())
+  clientId              String        @db.Uuid
+  legalName1            String?
+  dba1                  String?
+  typeOfEntity1         String?
+  ein1                  String?
+  mailingAddress1       String?
+  legalName2            String?
+  dba2                  String?
+  typeOfEntity2         String?
+  ein2                  String?
+  mailingAddress2       String?
+  legalName3            String?
+  dba3                  String?
+  typeOfEntity3         String?
+  ein3                  String?
+  mailingAddress3       String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  contractId            Int?
+  businessInfoId        Int?
+  addendumDated         String?
+  businessLocation      String?
+  principalBusiness     String?
+  principalOwner        String?
+  principalOwner1Date   String?
+  principalOwner1Name   String?
+  principalOwner2Date   String?
+  principalOwner2Name   String?
+  principalOwnerAmount1 String?
+  principalOwnerAmount2 String?
+  principalState        String?
+  businessInfo          BusinessInfo? @relation("AddendumBusinessInfo", fields: [businessInfoId], references: [id])
+  client                Client        @relation(fields: [clientId], references: [id])
+  contract              Contract?     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([businessInfoId])
+}
+
+model EPO {
+  id              Int           @id @default(autoincrement())
+  clientId        String        @db.Uuid
+  amountReceived1 String?
+  receivedDate1   String?
+  amountReceived2 String?
+  receivedDate2   String?
+  amountReceived3 String?
+  receivedDate3   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  contractId      Int?
+  businessInfoId  Int?
+  businessInfo    BusinessInfo? @relation("EPOBusinessInfo", fields: [businessInfoId], references: [id])
+  client          Client        @relation(fields: [clientId], references: [id])
+  contract        Contract?     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([businessInfoId])
+}
+
+model ACH {
+  id                                        Int           @id @default(autoincrement())
+  clientId                                  String        @db.Uuid
+  bankName                                  String?
+  accountHolderName                         String?
+  accountNumber                             String?
+  routingNumber                             String?
+  paymentAmount                             String?
+  frequency                                 String?
+  createdAt                                 DateTime      @default(now())
+  updatedAt                                 DateTime      @updatedAt
+  contractId                                Int?
+  businessInfoId                            Int?
+  address                                   String?
+  bankBranchCity                            String?
+  bankState                                 String?
+  bankZip                                   String?
+  city                                      String?
+  dba                                       String?
+  phone                                     String?
+  state                                     String?
+  zip                                       String?
+  ach_authorization_bank_portal_website     String?
+  ach_authorization_other_infomation        String?
+  ach_authorization_password                String?
+  ach_authorization_reference_name1         String?
+  ach_authorization_reference_name2         String?
+  ach_authorization_reference_name3         String?
+  ach_authorization_reference_number2       String?
+  ach_authorization_reference_number3       String?
+  ach_authorization_reference_number_1      String?
+  ach_authorization_reference_relationship1 String?
+  ach_authorization_reference_relationship2 String?
+  ach_authorization_reference_relationship3 String?
+  ach_authorization_security_answer1        String?
+  ach_authorization_security_answer2        String?
+  ach_authorization_security_answer3        String?
+  ach_authorization_security_question1      String?
+  ach_authorization_security_question2      String?
+  ach_authorization_security_question3      String?
+  ach_authorization_username                String?
+  businessInfo                              BusinessInfo? @relation("ACHBusinessInfo", fields: [businessInfoId], references: [id])
+  client                                    Client        @relation(fields: [clientId], references: [id])
+  contract                                  Contract?     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([businessInfoId])
+}
+
+model Iso {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  name                 String
+  email                String?
+  phone                String?
+  bankAccountNo        String
+  routingNumber        String
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  commissionPercentage Float
+  /// Uploaded ISO portal documents: [{ id, url, originalName?, publicId?, uploadedAt, category? }]
+  documents            Json                    @default("[]")
+  /// When the ISO accepted the portal agreement (persisted; replaces localStorage-only flow).
+  agreementAcceptedAt  DateTime?
+  /// Lifecycle status: active | inactive | suspended
+  status               String                  @default("active") @db.VarChar(16)
+  /// Commission plan (IsoCommissionPlan.id) assigned in the ISO portal.
+  tierId               String?                 @db.Uuid
+  contactName          String?
+  managerName          String?
+  missingDocs          String?
+  agreementEmail       String?
+  agreementSentAt      DateTime?
+  agreementViewedAt    DateTime?
+  /// Pinned tier (Bronze | Silver | Gold | Platinum); null = derived from score.
+  tierOverride         String?                 @db.VarChar(16)
+  badges               String[]                @default([])
+  applications         Application[]
+  applicationPayouts   IsoApplicationPayout[]
+  commissionSchedules  IsoCommissionSchedule[]
+}
+
+/// Commission plan templates for ISOs (ISO portal).
+model IsoCommissionPlan {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  pointsPct  Float
+  /// upfront | on_collection
+  basis      String   @default("on_collection") @db.VarChar(16)
+  renewalPct Float    @default(0)
+  /// 0 = no cap
+  capAmount  Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+/// Singleton ISO portal settings (id = "default").
+model IsoPortalSetting {
+  id        String   @id @default("default")
+  /// { weights: { volume, conversion, quality, profit, submission }, thresholds: { platinum, gold, silver }, minFunded }
+  scoring   Json?
+  updatedAt DateTime @updatedAt
+}
+
+/// ISO commission payout line items (mirrors deal payment schedule UX).
+model IsoCommissionSchedule {
+  id            String       @id @default(uuid()) @db.Uuid
+  isoId         String       @db.Uuid
+  applicationId String?      @db.Uuid
+  amount        Decimal      @db.Decimal(12, 2)
+  scheduleDate  DateTime
+  note          String?
+  status        String       @default("manual") @db.VarChar(32)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  application   Application? @relation(fields: [applicationId], references: [id])
+  iso           Iso          @relation(fields: [isoId], references: [id], onDelete: Cascade)
+
+  @@index([isoId])
+  @@index([applicationId])
+}
+
+/// Per-application ISO commission payment tracking (single row per ISO + application).
+model IsoApplicationPayout {
+  id               String                     @id @default(uuid()) @db.Uuid
+  isoId            String                     @db.Uuid
+  applicationId    String                     @db.Uuid
+  payoutStatus     IsoApplicationPayoutStatus @default(PENDING)
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  paidAt           DateTime?
+  scheduledPayDate DateTime?
+  /// Set when the payout batch is approved in the ISO portal (before it is paid).
+  approvedAt       DateTime?
+  application      Application                @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  iso              Iso                        @relation(fields: [isoId], references: [id], onDelete: Cascade)
+
+  @@unique([isoId, applicationId])
+  @@index([isoId])
+  @@index([applicationId])
+}
+
+model PaymentMailLog {
+  id            String               @id @default(uuid()) @db.Uuid
+  applicationId String               @db.Uuid
+  dealKey       String
+  templateName  String
+  category      String
+  recipient     String
+  subject       String
+  body          String?
+  status        PaymentMailLogStatus
+  createdById   String?              @db.Uuid
+  createdAt     DateTime             @default(now()) @db.Timestamptz(6)
+  application   Application          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdBy     User?                @relation("PaymentMailLogCreatedBy", fields: [createdById], references: [id])
+
+  @@index([applicationId])
+  @@index([createdAt])
+}
+
+enum IsoApplicationPayoutStatus {
+  PENDING
+  PAID
+  CLAWBACKS
+}
+
+enum PaymentMailLogStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+enum Role {
+  AGENT
+  SCRUBBING
+  UNDERWRITER
+  ACCOUNTANT
+  ADMIN
+  OPERATIONS
+  SYNDICATOR
+  SUPER_ADMIN
+  ACCOUNTS
+}
+
+enum RequestStatus {
+  CREATED
+  REQUEST
+  RECEIVED
+  VERIFIED
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  APPLICATION
+}
+
+enum ParticipantRole {
+  MEMBER
+  ADMIN
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+enum ChannelType {
+  channel
+  dm
+}
+
+enum MessageContentType {
+  text
+  system
+  file
+}
+
+enum ChannelMessageType {
+  channel
+  dm
+}

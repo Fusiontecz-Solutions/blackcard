@@ -1,0 +1,204 @@
+{
+  "layoutVersion": 1,
+  "key": "flex_addendum",
+  "name": "Black Card Flex Addendum",
+  "description": "Flex addendum — BoldSignTemplate type=addendum.",
+  "legacyDocuSignTemplateId": "d72c4f1d-b5da-44ca-9d23-b6c4f35c21d0",
+  "pdf": {
+    "source": "boldSignTemplate",
+    "fileName": "BLACK CARD - FLEX ADDENDUM.pdf"
+  },
+  "document": {
+    "documentId": "1",
+    "originalFileName": "BLACK CARD - BLANK FLEX ADDENDUM.pdf"
+  },
+  "signers": [
+    {
+      "roleName": "Signer",
+      "routingOrder": 1,
+      "legacyRecipientId": "41418135"
+    }
+  ],
+  "variables": [
+    "addendum_date",
+    "agreement_date",
+    "client_legal_name",
+    "addendum_client_name",
+    "merchant2_name",
+    "installment_day_1",
+    "installment_day_2",
+    "daily_payment_1",
+    "daily_payment_2",
+    "receivable_purchase_1",
+    "receivable_purchase_2"
+  ],
+  "placements": [
+    {
+      "id": "p1",
+      "type": "signature",
+      "slot": "signature_p2_431_393",
+      "documentId": "1",
+      "pageNumber": "2",
+      "x": "431",
+      "y": "393",
+      "signerRole": "Signer",
+      "optional": false,
+      "sourceTabLabel": "Signature 0d60ce43-e240-43a0-bdc0-3c4a3bcbaea1"
+    },
+    {
+      "id": "p2",
+      "type": "date",
+      "variable": "addendum_date",
+      "slot": "date_p1_191_113",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "191",
+      "y": "113",
+      "signerRole": "Signer",
+      "optional": false,
+      "sourceTabLabel": "Date Signed b20d322e-c871-4451-bf00-208cf18f84c6"
+    },
+    {
+      "id": "p3",
+      "type": "date",
+      "variable": "agreement_date",
+      "slot": "date_p1_152_128",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "152",
+      "y": "128",
+      "signerRole": "Signer",
+      "optional": false,
+      "sourceTabLabel": "Date Signed c256e775-3dcf-4bbc-b5db-1f5aa85342a3"
+    },
+    {
+      "id": "p4",
+      "type": "text",
+      "variable": "client_legal_name",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "38",
+      "y": "144",
+      "signerRole": "Signer",
+      "optional": true,
+      "sourceTabLabel": "client_legal_name"
+    },
+    {
+      "id": "p5",
+      "type": "text",
+      "variable": "addendum_client_name",
+      "documentId": "1",
+      "pageNumber": "2",
+      "x": "106",
+      "y": "403",
+      "signerRole": "Signer",
+      "optional": true,
+      "sourceTabLabel": "addendum_client_name"
+    },
+    {
+      "id": "p6",
+      "type": "text",
+      "variable": "merchant2_name",
+      "documentId": "1",
+      "pageNumber": "2",
+      "x": "111",
+      "y": "521",
+      "signerRole": "Signer",
+      "optional": true,
+      "when": "owners >= 2",
+      "sourceTabLabel": "merchant2_name addendum"
+    },
+    {
+      "id": "p7",
+      "type": "signature",
+      "slot": "signature_p2_431_503",
+      "documentId": "1",
+      "pageNumber": "2",
+      "x": "431",
+      "y": "503",
+      "signerRole": "Signer",
+      "optional": false,
+      "signerParty": "secondary",
+      "when": "owners >= 2",
+      "sourceTabLabel": "Signature merchant2 addendum"
+    },
+    {
+      "id": "p22",
+      "type": "text",
+      "variable": "installment_day_1",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "44",
+      "y": "363",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "installment_day_1"
+    },
+    {
+      "id": "p23",
+      "type": "text",
+      "variable": "installment_day_2",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "44",
+      "y": "382",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "installment_day_2"
+    },
+    {
+      "id": "p24",
+      "type": "text",
+      "variable": "daily_payment_1",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "226",
+      "y": "363",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "daily_payment_1"
+    },
+    {
+      "id": "p25",
+      "type": "text",
+      "variable": "daily_payment_2",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "226",
+      "y": "377",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "daily_payment_2"
+    },
+    {
+      "id": "p26",
+      "type": "text",
+      "variable": "receivable_purchase_1",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "390",
+      "y": "363",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "receivable_purchase_1"
+    },
+    {
+      "id": "p27",
+      "type": "text",
+      "variable": "receivable_purchase_2",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "389",
+      "y": "377",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "receivable_purchase_2"
+    }
+  ]
+}

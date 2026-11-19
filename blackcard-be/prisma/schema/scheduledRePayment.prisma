@@ -1,0 +1,32 @@
+model ScheduledRePayment {
+  id            String      @id @default(cuid())
+  applicationId String      @db.Uuid
+  termOfferId   String      @db.Uuid
+  status        String
+  scheduledDate DateTime
+  orderRef      String      @unique
+  error         String?
+  createdAt     DateTime    @default(now())
+  application   Application @relation(fields: [applicationId], references: [id])
+  termOffer     TermsOffer  @relation(fields: [termOfferId], references: [id])
+}
+
+model ScheduledRePaymentTransaction {
+  id                  Int      @id @default(autoincrement())
+  status              String
+  orderId             String
+  historyId           String
+  consumerUnique      String
+  authCode            String
+  parentId            String
+  subId               String
+  paymentType         String
+  customerName        String
+  customerPhone       String
+  initialAmount       Float
+  billingCycle        Int
+  currency            String
+  merchantOrderNumber String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}

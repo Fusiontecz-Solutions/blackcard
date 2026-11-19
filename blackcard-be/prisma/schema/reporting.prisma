@@ -1,0 +1,199 @@
+// Reporting module (single-tenant book CRM).
+// Stub Book row + fact tables mirrored from Super Admin for schema parity.
+
+model Book {
+  id         String  @id @default(uuid()) @db.Uuid
+  name       String
+  code       String  @unique
+  domain     String  @default("")
+  apiBaseUrl String  @default("")
+  status     Boolean @default(true)
+
+  reportFacts          ReportApplicationFact[]
+  reportStageEvents    ReportStageEvent[]
+  reportDailySnapshots ReportDailySnapshot[]
+  reportPayments       ReportPaymentFact[]
+}
+
+model ReportApplicationFact {
+  id                        String    @id @default(uuid()) @db.Uuid
+  bookId                    String    @db.Uuid
+  applicationUuid           String
+  applicationNumericId      String?
+  dealId                    String?
+  merchantName              String?
+  dealType                  String?
+  priority                  String?
+  agentId                   String?
+  agentName                 String?
+  isoId                     String?
+  isoName                   String?
+  salesRep                  String?
+  underwriterId             String?
+  underwriterName           String?
+  scrubberRecommendation    String?
+  stage                     String?
+  state                     String?
+  status                    String?
+  category                  String?
+  requestedAmount           Decimal?  @db.Decimal(18, 2)
+  approvedAmount            Decimal?  @db.Decimal(18, 2)
+  fundedAmount              Decimal?  @db.Decimal(18, 2)
+  commissionAmount          Decimal?  @db.Decimal(18, 2)
+  commissionPct             Decimal?  @db.Decimal(9, 4)
+  paybackAmount             Decimal?  @db.Decimal(18, 2)
+  repaidAmount              Decimal?  @db.Decimal(18, 2)
+  balanceDue                Decimal?  @db.Decimal(18, 2)
+  isDuplicate               Boolean   @default(false)
+  needsContractReinitiation Boolean   @default(false)
+  createdAtTenant           DateTime?
+  updatedAtTenant           DateTime?
+  claimedAt                 DateTime?
+  approvedAt                DateTime?
+  contractSentAt            DateTime?
+  contractSignedAt          DateTime?
+  fundedAt                  DateTime?
+  declinedAt                DateTime?
+  deletedAtTenant           DateTime?
+  declinedByRole            String?
+  raw                       Json?
+  firstSeenAt               DateTime  @default(now())
+  syncedAt                  DateTime  @default(now())
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, applicationUuid])
+  @@index([bookId, stage])
+  @@index([bookId, status])
+  @@index([createdAtTenant])
+  @@index([fundedAt])
+  @@index([approvedAt])
+  @@index([declinedAt])
+  @@index([agentId])
+  @@index([underwriterId])
+  @@index([syncedAt])
+}
+
+model ReportStageEvent {
+  id              String   @id @default(uuid()) @db.Uuid
+  bookId          String   @db.Uuid
+  applicationUuid String
+  fromStage       String?
+  toStage         String?
+  fromStatus      String?
+  toStatus        String?
+  at              DateTime @default(now())
+  source          String   @default("sync")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId, applicationUuid, at])
+  @@index([toStage, at])
+  @@index([at])
+}
+
+model ReportDailySnapshot {
+  id        String   @id @default(uuid()) @db.Uuid
+  bookId    String   @db.Uuid
+  date      DateTime @db.Date
+  metrics   Json
+  createdAt DateTime @default(now())
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, date])
+  @@index([date])
+}
+
+model ReportSyncRun {
+  id               String    @id @default(uuid()) @db.Uuid
+  bookId           String?   @db.Uuid
+  trigger          String    @default("manual")
+  status           String    @default("running")
+  startedAt        DateTime  @default(now())
+  finishedAt       DateTime?
+  applicationsSeen Int       @default(0)
+  upserted         Int       @default(0)
+  stageEvents      Int       @default(0)
+  error            String?
+
+  @@index([startedAt])
+  @@index([bookId, startedAt])
+}
+
+model ReportSchedule {
+  id                String    @id @default(uuid()) @db.Uuid
+  name              String
+  reportKey         String
+  filters           Json
+  frequency         String
+  hourLocal         Int       @default(7)
+  minuteLocal       Int       @default(0)
+  dayOfWeek         Int?
+  dayOfMonth        Int?
+  timezone          String    @default("America/New_York")
+  recipients        String[]  @default([])
+  format            String    @default("xlsx")
+  sections          String[]  @default([])
+  includeAttachment Boolean   @default(true)
+  subject           String?
+  note              String?
+  enabled           Boolean   @default(true)
+  createdById       String?   @db.Uuid
+  createdByEmail    String?
+  lastRunAt         DateTime?
+  lastStatus        String?
+  lastError         String?
+  nextRunAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([enabled, nextRunAt])
+}
+
+model ReportSavedView {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @db.Uuid
+  name      String
+  reportKey String
+  filters   Json
+  isShared  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([reportKey, isShared])
+}
+
+model ReportPaymentFact {
+  id                   String    @id @default(uuid()) @db.Uuid
+  bookId               String    @db.Uuid
+  paymentUuid          String
+  applicationUuid      String?
+  applicationNumericId String?
+  dealId               String?
+  merchantName         String?
+  amount               Decimal?  @db.Decimal(18, 2)
+  paidAmount           Decimal?  @db.Decimal(18, 2)
+  status               String
+  rawStatus            String?
+  failureReason        String?
+  method               String?
+  scheduledDate        DateTime?
+  processedDate        DateTime?
+  createdAtTenant      DateTime?
+  updatedAtTenant      DateTime?
+  notes                String?
+  raw                  Json?
+  firstSeenAt          DateTime  @default(now())
+  syncedAt             DateTime  @default(now())
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, paymentUuid])
+  @@index([bookId, status])
+  @@index([scheduledDate])
+  @@index([processedDate])
+  @@index([applicationUuid])
+  @@index([bookId, applicationUuid])
+}

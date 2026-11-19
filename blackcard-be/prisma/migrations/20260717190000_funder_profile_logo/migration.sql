@@ -1,0 +1,3 @@
+ALTER TABLE "FunderProfile"
+ADD COLUMN IF NOT EXISTS "logoUrl" TEXT,
+ADD COLUMN IF NOT EXISTS "logoPublicId" TEXT;

@@ -1,0 +1,6 @@
+{
+  "watch": ["src", ".env"],
+  "ext": "ts,json",
+  "ignore": ["src/scripts/**", "dist/**", "node_modules/**", ".git/**"],
+  "delay": 1500
+}

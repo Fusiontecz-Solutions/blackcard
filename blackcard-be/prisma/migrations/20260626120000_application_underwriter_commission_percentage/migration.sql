@@ -1,0 +1,1 @@
+ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "underwriterCommissionPercentage" DOUBLE PRECISION NOT NULL DEFAULT 0;

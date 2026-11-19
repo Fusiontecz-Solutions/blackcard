@@ -1,0 +1,303 @@
+/**
+ * Scrubbing tab -> mca-tool Wd preview visual parity.
+ *
+ * The Scrubbing (decision-making) tab renders the CRM's editable components,
+ * while mca-tool's Wd preview (WouldMePreviewModal) renders the MCA report look.
+ * This sheet restyles the tab's Bank Analysis, Bank Total and Positions cards to
+ * the Wd preview's tokens WITHOUT touching columns or editability. The rules are
+ * ported from mca-tool's app/globals.css (.mca-merged-card, .mca-merged-bar,
+ * .mca-summary-row, .mca-preview-body type spec).
+ *
+ * Hooks:
+ *   data-scrubbing-preview-theme  on each themed card (never a shared ancestor —
+ *                                 the Offer and Leverage tables set per-value
+ *                                 colours that a blanket wrapper would flatten)
+ *   .scrub-merged-card            the card that paints the single blue band
+ *   .scrub-band-tall              Positions: taller header row, longer band
+ *   .scrub-merged-bar             section title row sitting on the band
+ *   .scrub-merged-head            column-header row sitting on the band
+ *   .scrub-net-cell               Net Credit column tint
+ *   .scrub-alert-cell             NSF / Low Blc column tint
+ *   .scrub-summary-row            AVERAGE / TOTAL row
+ *
+ * Colour rules are gated on `html:not(.dark)` because the preview is a
+ * light-only report — dark mode keeps the tab's existing palette.
+ */
+
+[data-scrubbing-preview-theme] {
+  --ledgerx-border: #e2e2e2;
+  --scrub-rule: #cbd5e1;
+  --scrub-net-cell-bg: #ebf3ff;
+  --scrub-net-avg-bg: #e6f0ff;
+  --scrub-alert-bg: rgba(146, 39, 39, 0.08);
+  --scrub-body-text: #334155;
+  --scrub-head-text: #64748b;
+  --scrub-base: #fdfdfe;
+  /* Band stops — same as .mca-merged-card. */
+  --scrub-band-mid: 33px;
+  --scrub-band-end: 64px;
+}
+
+[data-scrubbing-preview-theme].scrub-band-tall {
+  --scrub-band-end: 82px;
+}
+
+/* ---------------------------------------------------------------- typography */
+
+/* Wd forces Calibri over the whole preview. */
+[data-scrubbing-preview-theme],
+[data-scrubbing-preview-theme] *:not(svg):not(svg *) {
+  font-family: Calibri, "Carlito", system-ui, -apple-system, sans-serif !important;
+  -webkit-font-smoothing: auto !important;
+  -moz-osx-font-smoothing: auto !important;
+}
+
+/* Section title: 16px / 700 / uppercase, like every Wd section bar. */
+[data-scrubbing-preview-theme] .scrub-merged-title {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: normal !important;
+}
+
+/* ------------------------------------------------------------------- tables */
+
+[data-scrubbing-preview-theme] table {
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+/* Column headers: 13px / 700 / Title Case (Wd overrides the uppercase utility). */
+[data-scrubbing-preview-theme] thead th {
+  padding: 0.5rem 8px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+}
+
+/* Body cells: 13px / 500. */
+[data-scrubbing-preview-theme] tbody td,
+[data-scrubbing-preview-theme] tfoot td {
+  padding: 0.375rem 8px !important;
+  font-size: 13px !important;
+  font-weight: 500;
+  line-height: 1.35 !important;
+  vertical-align: middle !important;
+  text-align: left !important;
+}
+
+[data-scrubbing-preview-theme] tbody td *,
+[data-scrubbing-preview-theme] tfoot td * {
+  font-size: 13px !important;
+}
+
+[data-scrubbing-preview-theme] tbody td > div,
+[data-scrubbing-preview-theme] tfoot td > div {
+  justify-content: flex-start !important;
+}
+
+/* The CRM tables paint row separators with `divide-y`; the row border below
+   replaces it. */
+[data-scrubbing-preview-theme] tbody > :not([hidden]) ~ :not([hidden]) {
+  border-top-width: 0 !important;
+}
+
+/* Summary rows (AVERAGE / TOTAL) are bold; the "(MTD Not counted)" sub-label
+   keeps its lighter weight. */
+[data-scrubbing-preview-theme] .scrub-summary-row > td,
+[data-scrubbing-preview-theme] .scrub-summary-row > td *:not(.text-slate-500),
+[data-scrubbing-preview-theme] tfoot tr > td,
+[data-scrubbing-preview-theme] tfoot tr > td *:not(.text-slate-500) {
+  font-weight: 700 !important;
+}
+
+[data-scrubbing-preview-theme] .scrub-summary-row .text-slate-500 {
+  font-size: 11px !important;
+}
+
+/* ------------------------------------------------------------ light palette */
+
+/* One blue band, painted once by the card, running through the title bar and
+   the column-header row (.mca-merged-card). */
+html:not(.dark) [data-scrubbing-preview-theme].scrub-merged-card {
+  border-radius: 14px !important;
+  border-color: var(--ledgerx-border) !important;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(174, 214, 239, 0.85) 0px,
+      rgba(174, 214, 239, 0.42) 18px,
+      rgba(174, 214, 239, 0.1) var(--scrub-band-mid),
+      rgba(174, 214, 239, 0) var(--scrub-band-end)
+    ),
+    var(--scrub-base) !important;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+}
+
+/* Title row and header row sit transparently on the band. */
+html:not(.dark) [data-scrubbing-preview-theme] .scrub-merged-bar {
+  background: transparent !important;
+  background-image: none !important;
+  border-bottom: 1px solid var(--scrub-rule) !important;
+  color: #334155 !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] .scrub-merged-bar h2 {
+  color: #334155 !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] table,
+html:not(.dark) [data-scrubbing-preview-theme] thead,
+html:not(.dark) [data-scrubbing-preview-theme] .scrub-merged-head,
+html:not(.dark) [data-scrubbing-preview-theme] .scrub-merged-head > th {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] thead tr {
+  color: var(--scrub-head-text) !important;
+  border-bottom: 1px solid var(--scrub-rule) !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] thead th {
+  color: var(--scrub-head-text) !important;
+}
+
+/* Body rows: plain base colour, 1px #cbd5e1 separators, none under the last. */
+html:not(.dark) [data-scrubbing-preview-theme] tbody tr {
+  border-bottom: 1px solid var(--scrub-rule) !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] tbody tr:last-child {
+  border-bottom: none !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] tbody tr.bg-slate-50\/40,
+html:not(.dark) [data-scrubbing-preview-theme] tbody tr.bg-white {
+  background-color: var(--scrub-base) !important;
+}
+
+/* Positions cells carry an inline sky-200 border for its edit controls. */
+html:not(.dark) [data-scrubbing-preview-theme] td[style*="186 230 253"] {
+  border-color: var(--scrub-rule) !important;
+}
+
+/* Only cells without their own colour — the status and value colours win. */
+html:not(.dark)
+  [data-scrubbing-preview-theme]
+  tbody
+  td:not([class*="text-"]):not([style*="color"]) {
+  color: var(--scrub-body-text) !important;
+}
+
+/* Flat column tints — Wd paints these without a fade. */
+html:not(.dark) [data-scrubbing-preview-theme] td.scrub-net-cell {
+  background-color: var(--scrub-net-cell-bg) !important;
+  background-image: none !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] td.scrub-alert-cell {
+  background-color: var(--scrub-alert-bg) !important;
+  background-image: none !important;
+}
+
+/* AVERAGE / TOTAL: 2px rule on top and a slate fade. */
+html:not(.dark) [data-scrubbing-preview-theme] tr.scrub-summary-row,
+html:not(.dark) [data-scrubbing-preview-theme] tfoot tr {
+  background-color: transparent !important;
+  background-image: linear-gradient(to bottom, #eef2f7 0%, #f8fafc 100%) !important;
+  color: #1e293b !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] tr.scrub-summary-row > td,
+html:not(.dark) [data-scrubbing-preview-theme] tfoot tr > td {
+  border-top: 2px solid var(--scrub-rule) !important;
+  padding-top: 0.3rem !important;
+  padding-bottom: 0.3rem !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] tr.scrub-summary-row > td:not(.scrub-net-cell):not(.scrub-alert-cell),
+html:not(.dark) [data-scrubbing-preview-theme] tfoot tr > td:not(.scrub-net-cell):not(.scrub-alert-cell) {
+  background-color: transparent !important;
+}
+
+/* Net Credit's AVERAGE cell is one step darker than the body cells. */
+html:not(.dark) [data-scrubbing-preview-theme] tr.scrub-summary-row > td.scrub-net-cell {
+  background-color: var(--scrub-net-avg-bg) !important;
+}
+
+html:not(.dark) [data-scrubbing-preview-theme] tfoot {
+  background: transparent !important;
+}
+
+/* The Offer and Leverage cards are NOT themed from here — they carry the Wd
+   preview's own ruled-table markup and per-value colours inline (see
+   OfferDecisionToggle and ApprovedOfferDisplay). */
+
+/* ------------------------------------------------------------ type scale --
+   One Wd type scale (.mca-preview-body in mca-tool's globals.css) for every
+   Scrubbing section — the themed table cards above plus the Offer, Leverage
+   and Additional Info cards, which carry `data-scrub-type` (typography only,
+   no colours, so their per-value colours survive):
+     section bars        16px / 700
+     column headers      13px / 700
+     table cells/fields  13px / 500
+     emphasised cells    13px / 700 (font-bold / <strong> in the markup:
+                         offer values, leverage labels, Additional Info
+                         labels, wire month rows, AVERAGE / TOTAL rows) */
+
+[data-scrub-type],
+[data-scrub-type] *:not(svg):not(svg *) {
+  font-family: Calibri, "Carlito", system-ui, -apple-system, sans-serif !important;
+  -webkit-font-smoothing: auto !important;
+  -moz-osx-font-smoothing: auto !important;
+}
+
+:is([data-scrubbing-preview-theme], [data-scrub-type]) td,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) td *:not(svg):not(svg *),
+:is([data-scrubbing-preview-theme], [data-scrub-type]) label,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) input,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) select,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) textarea,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) [role="combobox"] {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+:is([data-scrubbing-preview-theme], [data-scrub-type]) th,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) th * {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+:is([data-scrubbing-preview-theme], [data-scrub-type]) .font-bold,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) .font-bold *:not(.text-slate-500),
+:is([data-scrubbing-preview-theme], [data-scrub-type]) strong,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) .scrub-summary-row > td,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) .scrub-summary-row > td *:not(.text-slate-500),
+:is([data-scrubbing-preview-theme], [data-scrub-type]) tfoot td,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) tfoot td *:not(.text-slate-500) {
+  font-weight: 700 !important;
+}
+
+/* "(MTD Not counted)" stays the small grey sub-label. */
+:is([data-scrubbing-preview-theme], [data-scrub-type]) td .text-slate-500 {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+/* Section bars: the Bank Analysis / Bank Total / Positions titles and the
+   Offer, Leverage, Additional Info bars and wire side labels. */
+:is([data-scrubbing-preview-theme], [data-scrub-type]) .scrub-merged-title,
+:is([data-scrubbing-preview-theme], [data-scrub-type]) td .scrub-merged-title,
+[data-scrub-type] > div:first-child,
+[data-scrub-type] > div:first-child > span {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}

@@ -1,0 +1,21 @@
+model ApplicationSyndicatorDetails {
+  id                          Int      @id @default(autoincrement())
+  applicationId               String   @db.Uuid
+  createdAt                   DateTime @default(now())
+  syndicatorId                Int
+  syndicatorName              String?
+  amountSyndicated            Decimal
+  commissionAmount            Decimal
+  fundedAmount                Decimal
+  managementFeeToDate         Decimal
+  paybackAmount               Decimal
+  paybackAmountSyndicated     Decimal
+  percentageSyndicated        Decimal
+  syndicationCalculationLogic String?
+  termLength                  Float
+  updatedAt                   DateTime @updatedAt
+  merchantName                String?
+  collectedAmount             Decimal  @default(0)
+  remainingAmount             Decimal  @default(0)
+  status                      String?
+}

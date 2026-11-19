@@ -1,0 +1,258 @@
+model Disclosure {
+  id            Int         @id @default(autoincrement())
+  applicationId String      @unique @db.Uuid
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  contractId    Int         @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  contract      Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+model Contract {
+  id                             Int                               @id @default(autoincrement())
+  clientId                       String?                           @db.Uuid
+  applicationId                  String?                           @unique @db.Uuid
+  offerId                        String                            @unique @db.Uuid
+  contractNumber                 String                            @unique @default(cuid())
+  contractDate                   DateTime                          @default(now())
+  startDate                      DateTime
+  endDate                        DateTime
+  contractLenght                 Int
+  approvedAmount                 Float
+  totalAmount                    Float
+  createdAt                      DateTime                          @default(now())
+  updatedAt                      DateTime                          @updatedAt
+  createdById                    String                            @db.Uuid
+  agreementDate                  DateTime
+  paymentBankId                  String?                           @db.Uuid
+  status                         ContractStatus                    @default(DRAFT)
+  funderName                     String?
+  state                          String?
+  /// BoldSign contract prefill overrides (flat string map); edited in CRM Deal Review prefill form.
+  contractPrefillOverrides       Json?
+  appendixClientName             String?
+  appendixUnderwritingFees       String?
+  authorizationApplication       String?
+  authorizationClientBankAccount String?
+  authorizationClientBankName    String?
+  authorizationClientBankRouting String?
+  authorizationClientDate        String?
+  authorizationClientName        String?
+  authorizationClientNamePrint   String?
+  authorizationClientTaxId       String?
+  authorizedBusinessPhone        String?
+  businessAddress                String?
+  businessAddressCity            String?
+  businessAddressContract        String?
+  businessAddressContractCity    String?
+  businessAddressContractState   String?
+  businessAddressContractZip     String?
+  businessAddressState           String?
+  businessAddressZip             String?
+  clientEmail                    String?
+  clientName                     String?
+  clientPhone                    String?
+  customerName                   String?
+  doingBusinessAs                String?
+  entityType                     String?
+  exhibitOwnerName               String?
+  federalTaxIdEin                String?
+  legalName                      String?
+  purchaseAmount                 String?
+  purchasePercent                String?
+  purchasePrice                  String?
+  remittance                     String?
+  securityBusinessAddress        String?
+  securityBusinessAddressCity    String?
+  securityBusinessAddressState   String?
+  securityBusinessAddressZip     String?
+  securityBusinessName           String?
+  securityDoingBusinessAs        String?
+  securityGuarantor              String?
+  securityTaxEin                 String?
+  /// When true, append a reverse disbursement schedule page to the contract PDF before DocuSign send.
+  reverseDisbursementEnabled     Boolean                           @default(false)
+  /// { fixedDailyDebit?: string, summary?: { totalFundingAmount, netFundingAmount, dailyDebit, totalTermLength, reductionOnDailyRate, originationFeePercent, factorRate }, rows: Array<{ period, netDailysCredit, dailysCreditInclFees, totalPeriodCredits, receivablesPurchased }> }
+  reverseDisbursementSchedule    Json?
+  achs                           ACH[]
+  addendums                      Addendum[]
+  application                    Application?                      @relation(fields: [applicationId], references: [id])
+  client                         Client?                           @relation(fields: [clientId], references: [id])
+  createdBy                      User                              @relation("ContractCreatedBy", fields: [createdById], references: [id])
+  offer                          OfferDecision                     @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  paymentBank                    BankDetail?                       @relation(fields: [paymentBankId], references: [id])
+  clients                        ContractClient[]
+  templateMappings               ContractDocumentTemplateMapping[]
+  guarantors                     ContractGuarantor[]
+  owners                         ContractOwner[]
+  disclosure                     Disclosure?
+  docuSignEnvelopes              DocuSignEnvelope[]
+  epos                           EPO[]
+  documents                      FileMetadata[]
+  funding                        Funding?
+  paymentTerms                   PaymentTerms[]
+  repaymentSchedules             RepaymentSchedule[]
+  repaymentsTrasactions          RepaymentTransaction[]
+  termsOffers                    TermsOffer[]
+}
+
+model BoldSignTemplate {
+  name                     String
+  type                     String
+  state                    String?
+  /// * Legacy DocuSign/BoldSign template UUID — optional when using platform PDF + layout.
+  templateId               String?
+  createdAt                DateTime                          @default(now())
+  frequency                String?
+  id                       String                            @id @default(uuid()) @db.Uuid
+  /// * Identifies which platform layout (signing field positions) this template uses.
+  layoutKey                String?
+  originalFileName         String?
+  pdfPublicId              String?
+  /// * PDF URL (Cloudinary) when not using remote DocuSign template.
+  pdfUrl                   String?
+  contractTemplateMappings ContractDocumentTemplateMapping[]
+}
+
+model ContractDocumentTemplateMapping {
+  id           String           @id @default(uuid()) @db.Uuid
+  contractId   Int
+  templateId   String           @db.Uuid
+  documentType String
+  order        Int
+  createdAt    DateTime         @default(now())
+  contract     Contract         @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  template     BoldSignTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+model ContractClient {
+  id          Int      @id @default(autoincrement())
+  contractId  Int
+  clientId    String   @db.Uuid
+  signerOrder Int?
+  createdAt   DateTime @default(now())
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+model ContractOwner {
+  id                  Int      @id @default(autoincrement())
+  contractId          Int
+  firstName           String
+  lastName            String
+  email               String?
+  phone               String?
+  address             String?
+  state               String?
+  city                String?
+  zip                 String?
+  ownershipPercentage Float?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  contract            Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+model ContractGuarantor {
+  id            Int      @id @default(autoincrement())
+  contractId    Int
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  address       String?
+  state         String?
+  city          String?
+  zip           String?
+  ssn           String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  driverLicense String?
+  entityType    String?
+  contract      Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+model PaymentTerms {
+  id                Int              @id @default(autoincrement())
+  paymentFrequency  PaymentFrequency
+  paymentDays       PaymentDays[]
+  gracePeriodDays   Int?
+  lateFeePercentage Float?
+  lateFeeFlatAmount Float?
+  paymentMethod     PaymentMethod
+  paymentProcessor  PaymentProcessor
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  contractId        Int?
+  contract          Contract?        @relation(fields: [contractId], references: [id])
+}
+
+model RepaymentSchedule {
+  id          Int                   @id @default(autoincrement())
+  contractId  Int
+  dueDate     DateTime
+  amount      Float
+  status      String
+  paymentDate DateTime?
+  notes       String?
+  paymentId   Int?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  contract    Contract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  transaction RepaymentTransaction?
+}
+
+model RepaymentTransaction {
+  id                  Int               @id @default(autoincrement())
+  contractId          Int
+  repaymentScheduleId Int               @unique
+  amount              Float
+  paymentDate         DateTime
+  dueDate             DateTime
+  status              PaymentStatus     @default(PENDING)
+  method              PaymentMethod?
+  referenceNumber     String?
+  fees                Float?
+  notes               String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  contract            Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  repaymentSchedule   RepaymentSchedule @relation(fields: [repaymentScheduleId], references: [id])
+}
+
+enum PaymentMethod {
+  ACH
+  CHECK
+  CREDIT_CARD
+  DEBIT_CARD
+  WIRE_TRANSFER
+  MOBILE_PAYMENT
+  BANK_DRAFT
+  PAYPAL
+  OTHER
+}
+
+enum ContractStatus {
+  DRAFT
+  SENT
+  VIEWED
+  SIGNED
+  COMPLETED
+  DECLINED
+  REVOKED
+  EXPIRED
+}
+
+enum PaymentProcessor {
+  ACTUM
+  STRIPE
+  PAYPAL
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  PARTIAL
+}

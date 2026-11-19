@@ -1,0 +1,112 @@
+model BackgroundCheck {
+  id            String                   @id @default(uuid()) @db.Uuid
+  applicationId String                   @unique @db.Uuid
+  status        BackgroundCheckStatus    @default(NOT_STARTED)
+  createdById   String?                  @db.Uuid
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  application   Application              @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  decision      BackgroundCheckDecision?
+  events        BackgroundCheckEvent[]
+  items         BackgroundCheckItem[]
+
+  @@index([applicationId])
+  @@index([status])
+}
+
+model BackgroundCheckItem {
+  id                String                      @id @default(uuid()) @db.Uuid
+  backgroundCheckId String                      @db.Uuid
+  checkType         BackgroundCheckType
+  required          Boolean                     @default(true)
+  status            BackgroundCheckItemStatus   @default(NOT_STARTED)
+  result            BackgroundCheckResult?
+  notes             String?
+  performedById     String?                     @db.Uuid
+  performedAt       DateTime?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  metadata          Json?
+  attachments       BackgroundCheckAttachment[]
+  backgroundCheck   BackgroundCheck             @relation(fields: [backgroundCheckId], references: [id], onDelete: Cascade)
+
+  @@unique([backgroundCheckId, checkType])
+  @@index([backgroundCheckId])
+}
+
+model BackgroundCheckAttachment {
+  id           String              @id @default(uuid()) @db.Uuid
+  itemId       String              @db.Uuid
+  url          String
+  publicId     String?
+  originalName String?
+  uploadedById String?             @db.Uuid
+  uploadedAt   DateTime            @default(now())
+  item         BackgroundCheckItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+}
+
+model BackgroundCheckDecision {
+  id                String                 @id @default(uuid()) @db.Uuid
+  backgroundCheckId String                 @unique @db.Uuid
+  outcome           BackgroundCheckOutcome
+  reasonCode        String?
+  reasonText        String
+  conditionsText    String?
+  overrodeFail      Boolean                @default(false)
+  decidedById       String?                @db.Uuid
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  backgroundCheck   BackgroundCheck        @relation(fields: [backgroundCheckId], references: [id], onDelete: Cascade)
+}
+
+model BackgroundCheckEvent {
+  id                String          @id @default(uuid()) @db.Uuid
+  backgroundCheckId String          @db.Uuid
+  itemId            String?         @db.Uuid
+  action            String
+  fromStatus        String?
+  toStatus          String?
+  detail            Json?
+  actorId           String?         @db.Uuid
+  createdAt         DateTime        @default(now())
+  backgroundCheck   BackgroundCheck @relation(fields: [backgroundCheckId], references: [id], onDelete: Cascade)
+
+  @@index([backgroundCheckId, createdAt])
+}
+
+enum BackgroundCheckStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  READY_FOR_DECISION
+  APPROVED
+  DECLINED
+}
+
+enum BackgroundCheckType {
+  TLO
+  OPENCORPORATES
+  SOS
+  NY_COURT
+  DATAMERCH
+  GOOGLE
+}
+
+enum BackgroundCheckItemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+}
+
+enum BackgroundCheckResult {
+  PASS
+  FAIL
+  FLAG
+  NA
+}
+
+enum BackgroundCheckOutcome {
+  APPROVED
+  DECLINED
+}

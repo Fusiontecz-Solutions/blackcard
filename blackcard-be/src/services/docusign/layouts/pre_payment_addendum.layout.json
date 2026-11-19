@@ -1,0 +1,156 @@
+{
+  "layoutVersion": 1,
+  "key": "pre_payment_addendum",
+  "name": "Black Card Pre-Payment Addendum",
+  "description": "Pre-payment / EPO addendum — uploaded per funder.",
+  "pdf": {
+    "source": "boldSignTemplate",
+    "fileName": "BLACK CARD - EPO.pdf"
+  },
+  "document": {
+    "documentId": "1",
+    "originalFileName": "BLACK CARD - EPO.pdf"
+  },
+  "signers": [
+    {
+      "roleName": "Signer",
+      "routingOrder": 1
+    }
+  ],
+  "variables": [
+    "agreement_date",
+    "seller_name",
+    "guarantor_name",
+    "business_days",
+    "discount_percentage",
+    "printed_name"
+  ],
+  "placements": [
+    {
+      "id": "p1",
+      "type": "text",
+      "variable": "agreement_date",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "82",
+      "y": "173",
+      "width": "86",
+      "height": "18",
+      "fontSize": "10",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "agreement_date"
+    },
+    {
+      "id": "p1b",
+      "type": "text",
+      "variable": "agreement_date",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "517",
+      "y": "229",
+      "width": "86",
+      "height": "18",
+      "fontSize": "10",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "agreement_date_517_229"
+    },
+    {
+      "id": "p2",
+      "type": "text",
+      "variable": "seller_name",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "385",
+      "y": "242",
+      "width": "154",
+      "height": "18",
+      "fontSize": "10",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "seller_name"
+    },
+    {
+      "id": "p3",
+      "type": "text",
+      "variable": "guarantor_name",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "147",
+      "y": "258",
+      "width": "190",
+      "height": "18",
+      "fontSize": "10",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "guarantor_name"
+    },
+    {
+      "id": "p4",
+      "type": "text",
+      "variable": "business_days",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "94",
+      "y": "315",
+      "width": "28",
+      "height": "18",
+      "fontSize": "10",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "business_days"
+    },
+    {
+      "id": "p5",
+      "type": "text",
+      "variable": "discount_percentage",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "184",
+      "y": "312",
+      "width": "25",
+      "height": "18",
+      "fontSize": "10",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "discount_percentage"
+    },
+    {
+      "id": "p6",
+      "type": "signature",
+      "slot": "signature_p1_405_656",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "405",
+      "y": "656",
+      "width": "170",
+      "height": "28",
+      "signerRole": "Signer",
+      "optional": false,
+      "sourceTabLabel": "merchant_signature"
+    },
+    {
+      "id": "p7",
+      "type": "text",
+      "variable": "printed_name",
+      "documentId": "1",
+      "pageNumber": "1",
+      "x": "390",
+      "y": "704",
+      "width": "170",
+      "height": "18",
+      "fontSize": "10",
+      "signerRole": "Signer",
+      "optional": true,
+      "lockedForSigner": true,
+      "sourceTabLabel": "printed_name"
+    }
+  ]
+}

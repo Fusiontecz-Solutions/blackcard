@@ -1,0 +1,659 @@
+/**
+ * mca-tool Wd preview styles, ported verbatim from mca-tool-web/app/globals.css
+ * (the merged-card system and the .mca-preview-body type spec).
+ *
+ * mca-tool loads these globally; here the few global rules the preview relies
+ * on are scoped to the preview dialog ([data-mca-wd-preview-root]) so they cannot leak into
+ * the CRM. Everything below the scoped block keys off .mca-* / .bank-* classes
+ * that only the preview markup uses. Keep in sync with mca-tool globals.css.
+ */
+
+[data-mca-wd-preview-root] {
+  --ledgerx-content-bg: linear-gradient(180deg, #f8fafc, #e1eaf3);
+  --ledgerx-card-bg: #ffffff;
+  --ledgerx-border: #e2e2e2;
+  --ledgerx-muted: #64748b;
+  --ledgerx-alert-bg: rgba(146, 39, 39, 0.08);
+  --ledgerx-alert-bg2: #ff5c5c14;
+  --ledgerx-alert-border: rgba(146, 39, 39, 0.3);
+}
+
+/* The CRM's base layer uppercases every heading and spaces out every thead th
+   (index.css). mca-tool has neither, so undo them inside the preview. */
+[data-mca-wd-preview-root] h1,
+[data-mca-wd-preview-root] h2,
+[data-mca-wd-preview-root] h3,
+[data-mca-wd-preview-root] h4,
+[data-mca-wd-preview-root] h5,
+[data-mca-wd-preview-root] h6 {
+  text-transform: none;
+}
+[data-mca-wd-preview-root] thead th {
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* globals.css: .border */
+[data-mca-wd-preview-root] .border {
+  border-color: var(--ledgerx-border) !important;
+}
+
+/* globals.css: section header bars set via inline #aed6ef background. */
+[data-mca-wd-preview-root] [style*="aed6ef"]:not(.no-gradient),
+[data-mca-wd-preview-root] [style*="174, 214, 239"]:not(.no-gradient) {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.14) 58%,
+    rgba(255, 255, 255, 0.34) 72%,
+    rgba(255, 255, 255, 0.62) 84%,
+    rgba(255, 255, 255, 0.86) 93%,
+    rgba(255, 255, 255, 1) 100%
+  ) !important;
+}
+
+/* globals.css: table headers. */
+[data-mca-wd-preview-root] thead th:not(.no-gradient),
+[data-mca-wd-preview-root] thead tr:not(.no-gradient) {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.85) 100%
+  );
+}
+[data-mca-wd-preview-root] thead tr.no-gradient th { background-image: none !important; }
+
+/* globals.css: cards — faint slate at top into white. */
+[data-mca-wd-preview-root] .bg-white.rounded-xl:not(.no-gradient),
+[data-mca-wd-preview-root] .bg-white.rounded-lg:not(.no-gradient),
+[data-mca-wd-preview-root] .bg-white\/90.rounded-xl:not(.no-gradient) {
+  background-image: linear-gradient(to bottom, #f7f9fb 0%, #ffffff 100%);
+}
+
+/* globals.css: rounded corners. */
+[data-mca-wd-preview-root] button:not(.no-round) {
+  border-radius: 8px;
+}
+[data-mca-wd-preview-root] thead tr:first-child th:first-child { border-top-left-radius: 10px; }
+[data-mca-wd-preview-root] thead tr:first-child th:last-child  { border-top-right-radius: 10px; }
+[data-mca-wd-preview-root] tbody tr:last-child td:first-child  { border-bottom-left-radius: 10px; }
+[data-mca-wd-preview-root] tbody tr:last-child td:last-child   { border-bottom-right-radius: 10px; }
+[data-mca-wd-preview-root] [class*="shadow-sm"]:not(.no-round),
+[data-mca-wd-preview-root] [class*="shadow-md"]:not(.no-round),
+[data-mca-wd-preview-root] [class*="shadow-lg"]:not(.no-round),
+[data-mca-wd-preview-root] [class*="shadow-xl"]:not(.no-round) {
+  border-radius: 12px;
+}
+
+/* ───────────────────────── ported from globals.css line 380 on ─────────── */
+
+/* Column-header row of a merged card whose CARD paints the band: the row must
+   be transparent so that one gradient shows through. !important because the
+   shared DataTable sets an inline background on its header row. */
+.mca-merged-head-flat {
+  background: transparent !important;
+}
+
+
+/* Band length note: it runs to 115px, not the 100px the live page uses. The
+   title bar is pinned at 53px everywhere, but header rows are not the same
+   height in every context — the preview tables wrap their column labels and run
+   ~58px against the live tables' ~42px. At 100px the band died 11px before the
+   preview's header row ended, leaving a white strip that made the row look
+   detached. 115px covers the tallest case; shorter blocks just finish the fade
+   a few percent early, which is not visible. */
+
+/* ── One-gradient section header ────────────────────────────────────────────
+   The canonical treatment, verified against the Bank Analysis card: the CARD
+   paints a single blue→white band and the rows inside it are transparent, so
+   the section title row and the table's column-header row read as one block.
+
+   Do NOT rebuild this out of per-row slices (title fades to X, header row
+   restarts at X). That only lines up if the title row's height is known
+   exactly, and it isn't — the slices meet at the wrong alpha and the header
+   row washes out. One gradient, painted once, by the card. */
+.mca-merged-card {
+  /* The band has to finish exactly where the header block ends: too short and a
+     white strip appears at the bottom of the column-header row (the row stops
+     looking merged), too long and the first data row starts on a tinted
+     background.
+
+     Header rows are not a fixed height — they grow with the number of label
+     lines — so the end stop is a variable each card can override rather than one
+     hardcoded number. --mca-band-mid stays at 53px, the pinned title bar height,
+     so the handoff from title row to header row is identical everywhere. */
+  --mca-band-mid: 33px;
+  --mca-band-end: 64px; /* 33px bar + ~43px single-line header row */
+  /* Base the band fades into, and the fill behind the data rows. One variable
+     for both: if they differ, the rows look like a separate surface from the
+     card they sit on.
+
+     Started from #f8fafc (the preview container's bg-slate-50) and lightened
+     30% toward white. Note the Positions table's inline-tinted cells still fall
+     through to bg-slate-50 itself, so a large gap here would make the two
+     tables read as different surfaces again — its cells
+     carry inline tints, so they fall through to the preview container's
+     `[&_td]:bg-slate-50` instead of this variable. Keeping the two in sync
+     means Bank Analysis and Positions read as the same surface. */
+  /* Keep this OPAQUE. It was briefly made transparent so the watermark could
+     show through, which instead let the declined view's red backing bleed
+     through the Bank Analysis and Positions cards and turned their bands red.
+     The watermark is handled by its own stacking (z-index 0) and by the
+     reveal pass clearing ordinary cells — not by making cards see-through. */
+  --mca-base: #fdfdfe;
+  /* !important so a card's own rounded-lg / rounded-xl utility cannot win, and
+     a single value so every section is rounded the same amount. */
+  border-radius: 14px !important;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(174, 214, 239, 0.85) 0px,
+      /* Mid-bar stop: most of the fade now happens INSIDE the title bar, so it
+         carries the same white tint as the Additional Info bar instead of
+         reading as a flat block of colour. The band still continues past the
+         bar into the column-header row, it just arrives there much paler. */
+      rgba(174, 214, 239, 0.42) 18px,
+      rgba(174, 214, 239, 0.1) var(--mca-band-mid),
+      rgba(174, 214, 239, 0) var(--mca-band-end)
+    ),
+    var(--mca-base) !important;
+  overflow: hidden;
+}
+
+/* Two-line column labels — e.g. Positions' "TOTAL REPAYMENTS / EST. BALANCE"
+   and "EST. PMTS TERM / LEFT" — push the header row to ~85px. */
+.mca-merged-card.mca-band-tall {
+  --mca-band-end: 82px; /* 33px bar + ~64px two-line header row */
+}
+
+/* Section title row sitting on a .mca-merged-card. */
+.mca-merged-bar {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  /* Tight to the label — no dead space above or below the word. The bar was
+     previously pinned to 53px to match the live page's Bank Analysis bar, but
+     that one is tall because it carries an account-number input and a button;
+     a bar containing only a word does not need the height.
+
+     The band's --mca-band-mid below tracks this height, so the handoff from the
+     title row to the column-header row stays on the same ramp. If this padding
+     changes, --mca-band-mid has to change with it. */
+  padding: 0.375rem 1rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.025em !important;
+  color: #334155 !important;
+  box-sizing: border-box;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Values shown at the right of a title bar are data, not heading text. */
+/* The account number must not wrap under its label — "A/C ending:" and the
+   digits belong on one line. The bar is a flex row, so the note shrinks before
+   it wraps; nowrap plus shrink-0 keeps them together. */
+.mca-merged-bar .mca-merged-title-note {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 0.75rem !important;
+}
+
+/* ── Wire transaction side panels ───────────────────────────────────────────
+   Same one-gradient rule as the blue section headers: the CARD paints a single
+   tint→white band and the side label row plus the DATE/AMOUNT/DESCRIPTION row
+   sit on it transparently, so the two read as one block.
+
+   The band is shorter here (64px) than on the Bank Analysis cards (100px)
+   because this header block is shorter: a ~32px label row over a ~30px column
+   header row. The fade has to finish where the header block ends, otherwise the
+   first data row starts on a still-tinted background. */
+.mca-wire-card-debit {
+  /* Deeper at the top, paler by the column-header row. The old stops (#f3bfbf
+     to #f9dfdf) were only ~10% apart, so the side label and the header row
+     under it came out nearly the same tone — fine on screen where the fade is
+     continuous, but email renders one flat colour per row and the pair looked
+     like a single block with no fade at all. */
+  background:
+    linear-gradient(to bottom, #f3bfbf 0px, #f9dfdf 32px, rgba(255, 255, 255, 0) 64px),
+    transparent !important;
+}
+
+.mca-wire-card-credit {
+  /* See .mca-wire-card-debit — same widening, green side. */
+  background:
+    linear-gradient(to bottom, #b8dfc4 0px, #dcefe2 32px, rgba(255, 255, 255, 0) 64px),
+    transparent !important;
+}
+
+.mca-wire-bar,
+.mca-wire-head {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+.mca-wire-head > th {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+/* ── Tinted analysis columns (Net Credit, NSF/Neg, Low Blc) ─────────────────
+   The flat column fills pick up the same white veil as every other surface, so
+   they read as gradients rather than solid blocks.
+
+   This is a per-cell veil, which means the sheen restarts on each row. A single
+   unbroken fade down the whole column would need the gradient on <col> elements
+   (the only box that spans a column), and these tables have no <colgroup>. */
+.bank-net-header,
+.bank-net-cell,
+.bank-alert-cell {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.18) 55%,
+    rgba(255, 255, 255, 0.5) 100%
+  ) !important;
+}
+
+/* The Net Credit cell paints its fill on an inner div in some render paths. */
+.bank-net-cell > div {
+  background-image: inherit;
+}
+
+/* ── Merged headers inside the preview modals ───────────────────────────────
+   The preview containers force `[&_table]:bg-slate-50 [&_td]:bg-slate-50
+   [&_th]:bg-slate-50` on everything they render, to flatten arbitrary content
+   for the email clipboard. That opaque fill paints over the band a merged card
+   draws behind its header rows — the section title bar stays blue while the
+   column header row goes flat white.
+
+   Punch through it for merged headers only. Cells that set their own inline
+   background (the Net Credit and alert column tints) are left alone. */
+.mca-merged-card table {
+  background-color: transparent !important;
+}
+
+/* EVERY cell in a merged header row is transparent — including the Net Credit
+   and NSF / Low Blc columns, which tint their cells in the body. A tint here
+   interrupts the band with a block of colour part-way across the header row,
+   so the column highlight starts at the first data row instead. */
+.mca-merged-head-flat > th {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Summary row (AVERAGE / TOTAL): heavier top rule and a slate band so it reads
+   as a result, not another data row. Matches the live tables' tfoot. */
+.mca-summary-row > td,
+.mca-summary-row > th {
+  padding-top: 0.3rem !important;
+  padding-bottom: 0.3rem !important;
+  border-top: 2px solid #cbd5e1 !important;
+  background-color: transparent !important;
+  background-image: linear-gradient(to bottom, #eef2f7 0%, #f8fafc 100%) !important;
+  font-weight: 700 !important;
+}
+
+/* Body rows sit on the card's own base colour. The preview containers force
+   `[&_td]:bg-slate-50` on every cell, which tints the data rows grey-blue and
+   makes them look like a different surface from the card. Cells carrying a
+   column tint (Net Credit, NSF / Low Blc) keep it, whether that tint comes from
+   an inline style or a class. */
+.mca-merged-card tbody td:not([style*="background"]):not(.bank-net-cell):not(.bank-alert-cell):not(.bank-net-header) {
+  background-color: var(--mca-base) !important;
+}
+
+.mca-wire-card-debit tbody td:not([style*="background"]),
+.mca-wire-card-credit tbody td:not([style*="background"]) {
+  background-color: #ffffff !important;
+}
+
+/* Summary rows keep their own band — they are not data rows. The cells are
+   transparent so the <tr>'s slate gradient shows through. */
+.mca-merged-card tbody tr.bank-total-average-row > td,
+.mca-merged-card tbody tr.mca-summary-row > td {
+  background-color: transparent !important;
+}
+
+/* The preview containers' `[&_table]:bg-slate-50` paints the TABLE itself
+   opaque, which hides the card's band from the column-header row downwards —
+   the section bar stays coloured while the header row below it goes flat white,
+   i.e. "not merged". Clearing the th cells alone is not enough; the table and
+   thead boxes sit between the card and those cells. */
+.mca-merged-card table,
+.mca-merged-card thead,
+.mca-wire-card-debit table,
+.mca-wire-card-debit thead,
+.mca-wire-card-credit table,
+.mca-wire-card-credit thead {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.mca-wire-card-debit tbody td:not([style*="background"]),
+.mca-wire-card-credit tbody td:not([style*="background"]) {
+  background-color: #ffffff !important;
+}
+
+/* Wire panels get the same corner treatment as the merged section cards. */
+.mca-wire-card-debit,
+.mca-wire-card-credit {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Row density. The preview tables set their own vertical padding per table
+   (py-2 here, py-2.5 there), which left the rows noticeably taller than they
+   need to be and the sections inconsistent with each other. Set it once for
+   every merged card so Bank Analysis and Positions match. */
+.mca-merged-card thead th {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.mca-merged-card tbody td {
+  padding-top: 0.375rem !important;
+  padding-bottom: 0.375rem !important;
+}
+
+/* The global table-corner rules give the last row's end cells their own 10px
+   radius, which cut a visibly harder corner than the 14px card around them.
+   Inside a merged card let the card's overflow do the clipping instead. */
+.mca-merged-card thead tr:first-child th:first-child,
+.mca-merged-card thead tr:first-child th:last-child,
+.mca-merged-card tbody tr:last-child td:first-child,
+.mca-merged-card tbody tr:last-child td:last-child,
+.mca-merged-card tfoot tr:last-child td:first-child,
+.mca-merged-card tfoot tr:last-child td:last-child {
+  border-radius: 0 !important;
+}
+
+/* The title bar is the first child of a merged card, so it sits exactly in the
+   top corners. Give it the card's radius as well: with only the card clipping,
+   a 1px seam of square edge can show against the strong blue at the top, which
+   is why the top corners read sharper than the near-white bottom ones. */
+.mca-merged-bar {
+  border-top-left-radius: 14px !important;
+  border-top-right-radius: 14px !important;
+}
+
+/* OFFER table density. Its cells carry px-2 py-2 on a 17px base font, which
+   left a lot of dead space above and below each value. Targeted via the bar's
+   sibling rather than by editing every cell: the markup repeats the same
+   padding classes across six components, and they would drift apart again. */
+.mca-offer-bar + div td,
+.mca-offer-bar + div th {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+/* Wire tables one size up: the cells carry text-xs (12px), which is a step
+   smaller than every other table in the preview. Set on the cells because the
+   utility class on the table would otherwise win over an inherited size. */
+.mca-wire-card-debit th,
+.mca-wire-card-debit td,
+.mca-wire-card-credit th,
+.mca-wire-card-credit td {
+  font-size: 0.875rem !important;
+}
+
+/* The OFFER bar itself — py-3 plus a gradient that fades to white across its
+   own height made it read as a very tall band around a single word. */
+.mca-offer-bar {
+  padding-top: 0.375rem !important;
+  padding-bottom: 0.375rem !important;
+}
+
+/* Preview action buttons (Copy / Download PDF / Close): blue at the top easing
+   to white at the bottom, matching the section bars. The !important beats the
+   hover:bg-slate-100 utility these buttons carry, which would otherwise replace
+   the whole background on hover. */
+.mca-preview-action {
+  background-color: #ffffff !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(174, 214, 239, 0.95) 0%,
+    rgba(174, 214, 239, 0.6) 45%,
+    rgba(174, 214, 239, 0.28) 70%,
+    rgba(255, 255, 255, 1) 100%
+  ) !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e3a52 !important;
+}
+
+.mca-preview-action:hover:not(:disabled) {
+  background-image: linear-gradient(
+    180deg,
+    rgba(174, 214, 239, 1) 0%,
+    rgba(174, 214, 239, 0.72) 45%,
+    rgba(174, 214, 239, 0.4) 70%,
+    rgba(255, 255, 255, 1) 100%
+  ) !important;
+}
+
+/* Row separators. The default was a 0.625px (sub-pixel) #e2e2e2 line, which
+   browsers render inconsistently and which disappeared against the watermark —
+   it read as "lines missing" in the middle of the table. A solid 1px in a
+   slightly stronger grey draws reliably everywhere. */
+.mca-merged-card tbody tr > td,
+.mca-merged-card tfoot tr > td {
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+.mca-merged-card tbody tr:last-child > td {
+  border-bottom: none !important;
+}
+
+/* ── Preview typography ────────────────────────────────────────────────────
+   Calibri at 16px (Word size 12) across every preview. Set with !important because the
+   markup carries per-element sizes (text-[14px], text-[15px], text-[17px])
+   that would otherwise win.
+
+   Section headings keep their own size — the bars, the OFFER bar and the wire
+   side labels — so the hierarchy survives; only body text is normalised. */
+.mca-preview-body,
+.mca-preview-body * {
+  font-family: Calibri, "Carlito", system-ui, -apple-system, sans-serif !important;
+}
+
+.mca-preview-body,
+.mca-preview-body td,
+.mca-preview-body th,
+.mca-preview-body p,
+.mca-preview-body li,
+.mca-preview-body span,
+.mca-preview-body div {
+  font-size: 16px !important;
+}
+
+/* Table body cells are 13px / 500 — a step below the 16px body text — so the
+   data tables stay compact. Column-name header rows are 13px / 700. */
+.mca-preview-body td,
+.mca-preview-body td * {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+/* Summary rows (AVERAGE / TOTAL) stay bold; the rule above would otherwise
+   flatten them to 500. The "(MTD Not counted)" sub-label keeps its lighter weight. */
+.mca-preview-body .mca-summary-row > td,
+.mca-preview-body .mca-summary-row > td *:not(.text-slate-500),
+.mca-preview-body .bank-total-average-row > td,
+.mca-preview-body .bank-total-average-row > td *:not(.text-slate-500) {
+  font-weight: 700 !important;
+}
+
+/* Emphasised cells, bold in the preview, the email copy and the PDF:
+     - column-name header rows
+     - cells tagged .mca-strong: Additional Info labels, wire month rows,
+       Approved offer values, Leverage labels
+   Keep in sync with STRONG_SEL in utils/emailAppearance.js. */
+.mca-preview-body thead th,
+.mca-preview-body thead th *,
+.mca-preview-body .mca-merged-head-flat > th,
+.mca-preview-body .mca-merged-head-flat > th *,
+.mca-preview-body .mca-strong,
+.mca-preview-body .mca-strong *:not(.text-slate-500) {
+  font-weight: 700 !important;
+}
+
+.mca-preview-body thead th,
+.mca-preview-body thead th *,
+.mca-preview-body thead td,
+.mca-preview-body thead td *,
+.mca-preview-body .mca-merged-head-flat > th,
+.mca-preview-body .mca-merged-head-flat > th *,
+.mca-preview-body .mca-merged-head-flat > td,
+.mca-preview-body .mca-merged-head-flat > td * {
+  font-size: 13px !important;
+}
+
+.mca-preview-body .mca-leverage-table td,
+.mca-preview-body .mca-leverage-table td * {
+  font-size: 13px !important;
+}
+
+/* Notes / DMS Leverage card is a div list, not a table, so it gets the
+   table-body-cell spec explicitly: 13px / 500. */
+.mca-preview-body .mca-leverage-list,
+.mca-preview-body .mca-leverage-list * {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.mca-preview-body .mca-merged-bar,
+.mca-preview-body .mca-merged-bar *,
+.mca-preview-body .mca-wire-bar,
+.mca-preview-body .mca-wire-bar * {
+  font-size: 0.875rem !important;
+}
+
+/* The OFFER bar is a section heading like the others: 16px. */
+.mca-preview-body .mca-offer-bar,
+.mca-preview-body .mca-offer-bar * {
+  font-size: 16px !important;
+}
+
+/* ── Section headings in previews ──────────────────────────────────────────
+   Offer, Leverage, Bank Analysis, Positions, Additional Info and the wire side
+   labels: centred, Calibri, 16px. These bars are flex rows (several use
+   justify-between for a trailing value), so text-align alone does not centre
+   them — justify-content has to move the flex items too. */
+.mca-preview-body .mca-merged-bar,
+.mca-preview-body .mca-offer-bar,
+.mca-preview-body .mca-wire-bar,
+.mca-preview-body .mca-section-bar,
+.mca-section-bar {
+  font-family: Calibri, "Carlito", system-ui, -apple-system, sans-serif !important;
+  font-size: 16px !important;
+  text-align: center !important;
+  justify-content: center !important;
+  /* Uppercase belongs on the shared rule, not on each bar's own markup. Most
+     bars happened to carry an `uppercase` utility class; the wire heading did
+     not, so it stayed Title Case while the rest were caps. */
+  text-transform: uppercase !important;
+}
+
+.mca-preview-body .mca-section-bar *,
+.mca-section-bar * {
+  text-transform: uppercase !important;
+}
+
+.mca-preview-body .mca-merged-bar *,
+.mca-preview-body .mca-offer-bar *,
+.mca-preview-body .mca-wire-bar *,
+.mca-preview-body .mca-section-bar * {
+  font-size: 16px !important;
+  text-align: center !important;
+}
+
+/* Column headers under a section bar are Title Case, not caps — "Month",
+   "Total Credit", "Start Date". The bars above them stay uppercase, and that
+   contrast is what separates the two levels. */
+.mca-preview-body .mca-merged-head-flat th,
+.mca-preview-body .mca-wire-head th,
+.mca-preview-body thead th {
+  text-transform: none !important;
+}
+
+/* ── Heading weight ────────────────────────────────────────────────────────
+   Section bars (OFFER, LEVERAGE, BANK ANALYSIS, POSITIONS, ADDITIONAL INFO,
+   DEBIT/CREDIT) and the column sub-heading rows under them were a mix of
+   font-medium / font-semibold depending on which markup they came from, so
+   some read lighter than others. One rule puts every heading and sub-heading
+   at a true bold. */
+.mca-preview-body .mca-merged-bar,
+.mca-preview-body .mca-merged-bar *,
+.mca-preview-body .mca-offer-bar,
+.mca-preview-body .mca-offer-bar *,
+.mca-preview-body .mca-wire-bar,
+.mca-preview-body .mca-wire-bar *,
+.mca-preview-body .mca-section-bar,
+.mca-preview-body .mca-section-bar *,
+.mca-section-bar,
+.mca-section-bar * {
+  font-weight: 700 !important;
+}
+
+/* Sub-heading rows: the column names (Month / Bank 1 / Total, Date / Amount /
+   Description, Start Date / Lender …) in any preview table head. */
+.mca-preview-body thead th,
+.mca-preview-body thead td,
+.mca-merged-head-flat > th,
+.mca-merged-head-flat > td {
+  font-weight: 700 !important;
+}
+
+/* Preview type spec: column sub-headers 13px / 700 / Title Case. Scoped with
+   enough weight to beat the 13px / 500 body-cell rule above. */
+.mca-preview-body thead th,
+.mca-preview-body thead th *,
+.mca-preview-body thead td,
+.mca-preview-body thead td *,
+.mca-preview-body th,
+.mca-preview-body th *,
+.mca-preview-body .mca-merged-head-flat > th,
+.mca-preview-body .mca-merged-head-flat > th *,
+.mca-preview-body .mca-merged-head-flat > td,
+.mca-preview-body .mca-merged-head-flat > td *,
+.mca-preview-body .mca-wire-head th,
+.mca-preview-body .mca-wire-head th *,
+.mca-preview-body .mca-wire-head td,
+.mca-preview-body .mca-wire-head td * {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+}
+
+/* Column-name header text in the dark section-bar slate: at the old
+   slate-500 grey the 700 weight still read as regular next to the bold
+   Month column. Mirrored in utils/emailAppearance.js for the email copy. */
+.mca-preview-body thead th,
+.mca-preview-body thead td,
+.mca-preview-body .mca-merged-head-flat > th,
+.mca-preview-body .mca-merged-head-flat > td,
+.mca-preview-body .mca-wire-head th,
+.mca-preview-body .mca-wire-head td {
+  color: #334155 !important;
+}
+
+/* Section heading bars stay 16px / 700 / UPPER even when they sit in a table
+   cell (beats the td rules above). */
+.mca-preview-body td .mca-merged-bar,
+.mca-preview-body td .mca-merged-bar *,
+.mca-preview-body td .mca-offer-bar,
+.mca-preview-body td .mca-offer-bar *,
+.mca-preview-body td .mca-wire-bar,
+.mca-preview-body td .mca-wire-bar *,
+.mca-preview-body td .mca-section-bar,
+.mca-preview-body td .mca-section-bar * {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}

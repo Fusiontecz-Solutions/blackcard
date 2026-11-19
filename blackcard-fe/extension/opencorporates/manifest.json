@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "CRM Background Check Bridge",
+  "version": "1.2.3",
+  "description": "Send OpenCorporates and NY Court (NYSCEF) search results back to Black Card background check.",
+  "permissions": ["activeTab", "tabs", "storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "https://opencorporates.com/*",
+    "https://*.opencorporates.com/*",
+    "https://iapps.courts.state.ny.us/*",
+    "https://*.finexusai.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://opencorporates.com/*", "https://*.opencorporates.com/*"],
+      "js": ["bridge.js", "extract.js", "content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://iapps.courts.state.ny.us/nyscef/*"],
+      "js": ["bridge.js", "nyscef-extract.js", "content-nyscef.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.finexusai.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["crm-receiver.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "CRM Background Check Bridge",
+    "default_popup": "popup.html"
+  }
+}

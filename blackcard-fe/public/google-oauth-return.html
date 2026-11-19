@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Google connected — returning to Gmail</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #f8fafc;
+        color: #334155;
+      }
+      a {
+        color: #276d9c;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Returning to Gmail…</p>
+    <script>
+      (function () {
+        var target = "/gmail";
+        try {
+          var u = new URL(window.location.href);
+          var q = u.searchParams.get("next") || u.searchParams.get("path");
+          if (q && q.indexOf("/") === 0 && q.indexOf("//") !== 0) target = q;
+        } catch (e) {}
+        var dest = window.location.origin + target;
+        window.location.replace(dest);
+      })();
+    </script>
+    <noscript>
+      <p>
+        <a href="/gmail">Continue to Gmail</a>
+      </p>
+    </noscript>
+  </body>
+</html>

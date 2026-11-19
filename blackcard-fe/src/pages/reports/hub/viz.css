@@ -1,0 +1,70 @@
+/*
+ * Chart palette tokens for the Reports hub.
+ * Categorical slots are the validated reference order (blue, orange, aqua,
+ * yellow, magenta, green, violet, red); dark values are re-stepped for the
+ * dark surface, not flipped. Status colours are reserved and never used as
+ * series.
+ */
+.viz-root {
+  --viz-surface: var(--card, #ffffff);
+  --viz-text: var(--foreground, #0b0b0b);
+  --viz-text-2: var(--muted-foreground, #52514e);
+  --viz-grid: color-mix(in oklab, var(--foreground, #000) 10%, transparent);
+  --viz-axis: color-mix(in oklab, var(--foreground, #000) 18%, transparent);
+  --viz-series-1: #2a78d6;
+  --viz-series-2: #eb6834;
+  --viz-series-3: #1baf7a;
+  --viz-series-4: #eda100;
+  --viz-series-5: #e87ba4;
+  --viz-series-6: #008300;
+  --viz-series-7: #4a3aa7;
+  --viz-series-8: #e34948;
+  --viz-seq-1: #b7d3f6;
+  --viz-seq-2: #86b6ef;
+  --viz-seq-3: #5598e7;
+  --viz-seq-4: #2a78d6;
+  --viz-seq-5: #1c5cab;
+  --viz-seq-6: #104281;
+  --viz-muted: #b8b7b2;
+  --viz-good: #0ca30c;
+  --viz-warning: #fab219;
+  --viz-serious: #ec835a;
+  --viz-critical: #d03b3b;
+}
+
+.dark .viz-root,
+[data-theme='dark'] .viz-root,
+:root.dark .viz-root {
+  --viz-grid: color-mix(in oklab, var(--foreground, #fff) 12%, transparent);
+  --viz-axis: color-mix(in oklab, var(--foreground, #fff) 22%, transparent);
+  --viz-series-1: #3987e5;
+  --viz-series-2: #d95926;
+  --viz-series-3: #199e70;
+  --viz-series-4: #c98500;
+  --viz-series-5: #d55181;
+  --viz-series-6: #008300;
+  --viz-series-7: #9085e9;
+  --viz-series-8: #e66767;
+  --viz-seq-1: #184f95;
+  --viz-seq-2: #1c5cab;
+  --viz-seq-3: #256abf;
+  --viz-seq-4: #3987e5;
+  --viz-seq-5: #6da7ec;
+  --viz-seq-6: #9ec5f4;
+  --viz-muted: #5a5955;
+}
+
+.viz-root .recharts-cartesian-grid line {
+  stroke: var(--viz-grid);
+}
+.viz-root .recharts-cartesian-axis-line,
+.viz-root .recharts-cartesian-axis-tick-line {
+  stroke: var(--viz-axis);
+}
+.viz-root .recharts-text {
+  fill: var(--viz-text-2);
+  font-size: 11px;
+}
+.viz-root .recharts-tooltip-cursor {
+  stroke: var(--viz-axis);
+}

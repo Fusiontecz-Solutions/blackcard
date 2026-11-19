@@ -1,0 +1,168 @@
+model DocuSignToken {
+  id             Int      @id @default(autoincrement())
+  userId         String   @unique
+  accessToken    String
+  refreshToken   String
+  expirationTime DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model DocuSignEnvelope {
+  id                 Int                    @id @default(autoincrement())
+  envelopeId         String                 @unique
+  status             String
+  sentAt             DateTime?
+  completedAt        DateTime?
+  envelopeUri        String
+  deliveredAt        DateTime?
+  declinedAt         DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  termsOfferId       String?                @db.Uuid
+  contractId         Int?
+  docuSignDocuments  DocuSignDocument[]
+  contract           Contract?              @relation(fields: [contractId], references: [id])
+  termsOffer         TermsOffer?            @relation(fields: [termsOfferId], references: [id])
+  docuSignRecipients DocuSignRecipient[]
+  docuSignSender     DocuSignSender?
+  webhookEvents      DocuSignWebhookEvent[]
+
+  @@index([envelopeId], map: "docuSignEnvelope_envelopeId_idx")
+}
+
+model DocuSignSender {
+  id               Int              @id @default(autoincrement())
+  envelopeId       String           @unique @db.VarChar(36)
+  senderName       String
+  senderEmail      String
+  senderIp         String?
+  accountId        String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  docuSignEnvelope DocuSignEnvelope @relation(fields: [envelopeId], references: [envelopeId], onDelete: Cascade)
+}
+
+model DocuSignRecipient {
+  id               Int              @id @default(autoincrement())
+  envelopeId       String           @db.VarChar(36)
+  recipientId      String
+  recipientRole    String
+  status           String
+  signedAt         DateTime?
+  declinedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  declinedReason   String?
+  docuSignEnvelope DocuSignEnvelope @relation(fields: [envelopeId], references: [envelopeId], onDelete: Cascade)
+
+  @@unique([envelopeId, recipientId], name: "docuSign_envelopeId_recipientId_idx")
+}
+
+model DocuSignWebhookEvent {
+  id               Int              @id @default(autoincrement())
+  envelopeId       String           @db.VarChar(36)
+  eventType        String
+  eventTimestamp   DateTime
+  createdAt        DateTime         @default(now())
+  docuSignEnvelope DocuSignEnvelope @relation(fields: [envelopeId], references: [envelopeId], onDelete: Cascade)
+}
+
+model DocuSignDocument {
+  id               Int              @id @default(autoincrement())
+  envelopeId       String           @db.VarChar(36)
+  documentId       String
+  documentName     String
+  status           String
+  documentUrl      String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  docuSignEnvelope DocuSignEnvelope @relation(fields: [envelopeId], references: [envelopeId], onDelete: Cascade)
+}
+
+/// Admin-configured DocuSign JWT account used per funder.
+model DocuSignAccountProfile {
+  id                 String          @id @default(uuid()) @db.Uuid
+  name               String
+  integrationKey     String
+  clientSecret       String?
+  impersonatedUserId String
+  rsaPrivateKey      String          @db.Text
+  accountId          String?
+  baseUri            String?
+  defaultRoleName    String          @default("Signer")
+  webhookUser        String?
+  webhookPassword    String?
+  isActive           Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  funders            FunderProfile[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
+/// Funder configuration: contract layout, state rules, linked DocuSign account.
+model FunderProfile {
+  id                       String                  @id @default(uuid()) @db.Uuid
+  name                     String                  @unique
+  displayName              String?
+  dealIdPrefix             String?
+  assignsDealId            Boolean                 @default(false)
+  mainContractLayoutKey    String                  @default("contract")
+  contractPdfFileName      String?
+  /// Cloudinary image shown on funder-branded generated pages.
+  logoUrl                  String?
+  logoPublicId             String?
+  /// State codes/names when this funder appears in dropdown; empty = all states.
+  allowedStates            Json?
+  /// State codes/names where this funder is hidden; empty = no exclusions.
+  excludedStates           Json?
+  organization             String?
+  legalName                String?
+  contactEmail             String?
+  contactPhone             String?
+  /// DocuSign carbon-copy address included on every contract envelope for this funder.
+  defaultCcEmail           String?
+  addressLine1             String?
+  addressCity              String?
+  addressState             String?
+  addressZip               String?
+  docusignAccountProfileId String?                 @db.Uuid
+  sortOrder                Int                     @default(0)
+  isActive                 Boolean                 @default(true)
+  /// Legacy combined addendum/disclosure PDF source: platform | own | shared.
+  /// Prefer addendumDocumentsSource / disclosureDocumentsSource when set.
+  documentsSource          String                  @default("own")
+  /// When documentsSource / addendumDocumentsSource is shared (legacy shared id).
+  sharedDocumentsFunderId   String?                 @db.Uuid
+  /// Addendum/ACH PDF source: platform | own | shared (null = use documentsSource).
+  addendumDocumentsSource   String?
+  /// State disclosure PDF source: platform | own | shared (null = use documentsSource).
+  disclosureDocumentsSource String?
+  /// When addendumDocumentsSource is shared, layout keys use this funder's addendum PDFs.
+  sharedAddendumFunderId    String?                 @db.Uuid
+  /// When disclosureDocumentsSource is shared, layout keys use this funder's disclosure PDFs.
+  sharedDisclosureFunderId  String?                 @db.Uuid
+  /// Payoff / zero-balance letter email branding (Letter Info tab).
+  letterCompanyName         String?
+  letterLogoUrl             String?
+  letterLogoPublicId        String?
+  letterWatermarkUrl        String?
+  letterAccentStripLight    String?
+  letterAccentStripDark     String?
+  letterInfoTableIconBg     String?
+  /// Wire / Payment Address block on payoff letters (Letter Info tab).
+  letterWireBankName        String?
+  letterWireAddressLine1    String?
+  letterWireCityStateZip    String?
+  letterWireRoutingNumber   String?
+  letterWireAccountNumber   String?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  docusignAccountProfile   DocuSignAccountProfile? @relation(fields: [docusignAccountProfileId], references: [id], onDelete: SetNull)
+
+  @@index([docusignAccountProfileId])
+  @@index([isActive])
+  @@index([sortOrder])
+}

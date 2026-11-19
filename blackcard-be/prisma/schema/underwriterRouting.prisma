@@ -1,0 +1,9 @@
+/// Singleton row holding the Underwriter(s) Super Admin routes this book's cases to.
+/// One id  → cases are auto-assigned to that underwriter.
+/// Many ids → no auto-assign; those underwriters simply see every case.
+model UnderwriterRoutingConfig {
+  id                       String   @id @default("default")
+  designatedUnderwriterIds String[] @db.Uuid
+  updatedById              String?  @db.Uuid
+  updatedAt                DateTime @updatedAt
+}

@@ -1,0 +1,106 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "rhel-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model FileMetadata {
+  id                String           @id @default(uuid())
+  fileName          String
+  documentType      String?
+  filePath          String
+  fileUrl           String
+  downloadUrl       String
+  contentType       String
+  size              Int
+  documentRequestId Int?
+  ownerId           Int?
+  clientId          String?          @db.Uuid
+  contractId        Int?
+  uploadedAt        DateTime         @default(now())
+  isSystemGenerated Boolean          @default(false)
+  stipulationId     Int?
+  userId            String?
+  Client            Client?          @relation(fields: [clientId], references: [id])
+  contract          Contract?        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  DocumentRequest   DocumentRequest? @relation("DocumentRequestFiles", fields: [documentRequestId], references: [id], onDelete: Cascade)
+  stipulation       Stipulation?     @relation(fields: [stipulationId], references: [id], onDelete: Cascade)
+}
+
+model Stipulation {
+  id                      Int               @id @default(autoincrement())
+  name                    String            @unique
+  isRequiredForTermsOffer Boolean           @default(false)
+  isRequiredForContract   Boolean           @default(false)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  documentRequest         DocumentRequest[]
+  FileMetadata            FileMetadata[]
+}
+
+model FinancialSettings {
+  daysInMonth            Int?
+  weeksInMonth           Int?
+  defaultTermLength      Int?
+  defaultBuyRate         Float?
+  bounceFeeAmount        Float?
+  stopPaymentFeeAmount   Float?
+  accountClosedFeeAmount Float?
+  defaultFee             Float?
+  accountFrozenFeeAmount Float?
+  commissionPercent      Float?
+  minRenewalPercent      Float?
+  wireFeeAmount          Float?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  id                     Int      @id @default(autoincrement())
+  defaultFactorRate      Float?
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum AccountType {
+  SAVINGS
+  CHECKING
+  BUSINESS
+  OTHER
+}
+
+enum PaymentDays {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+enum PaymentFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+}
+
+enum CalculationLogic {
+  PRINCIPAL_SYNDICATED_AMOUNT
+  DISBURSED_SYNDICATED_AMOUNT
+}
+
+enum UploadType {
+  MANUAL
+  SYSTEM
+}
+
+enum Type {
+  Manual
+  Automatic
+  SemiAutomatic
+}

@@ -1,0 +1,380 @@
+model Syndicate {
+  id                Int                    @id @default(autoincrement())
+  name              String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  description       String?
+  status            SyndicateStatus        @default(ACTIVE)
+  formedAt          DateTime?
+  isActive          Boolean                @default(true)
+  totalLoanAmount   Decimal?
+  leadArrangerCount Int?
+  participantCount  Int?
+  email             String
+  phone             String
+  avgInterestRate   Decimal?
+  defaultRate       Decimal?
+  lastActivityDate  DateTime?
+  terminationDate   DateTime?
+  address1          String
+  address2          String?
+  city              String
+  state             String
+  zip               String
+  offers            Offers[]
+  documents         SyndicateDocument[]
+  transactions      SyndicateTransaction[]
+  syndications      Syndications[]
+  syndicators       Syndicator[]
+}
+
+model SyndicateDocument {
+  id          Int       @id @default(autoincrement())
+  syndicateId Int
+  name        String
+  fileUrl     String
+  description String?
+  uploadedAt  DateTime  @default(now())
+  syndicate   Syndicate @relation(fields: [syndicateId], references: [id])
+}
+
+model SyndicateTransaction {
+  id              Int                      @id @default(autoincrement())
+  syndicateId     Int
+  transactionType SyndicateTransactionType
+  amount          Decimal
+  transactionDate DateTime                 @default(now())
+  description     String?
+  syndicate       Syndicate                @relation(fields: [syndicateId], references: [id])
+}
+
+model Syndicator {
+  id                          Int                           @id @default(autoincrement())
+  firstName                   String
+  email                       String                        @unique
+  phone                       String?
+  companyName                 String?
+  role                        SyndicatorRole
+  experience                  Int?
+  industryFocus               String?
+  syndicationStrategy         String?
+  totalDeals                  Int?                          @default(0)
+  totalLoanAmount             Decimal?                      @default(0)
+  successRate                 Decimal?
+  averageDealSize             Decimal?
+  largestDeal                 Decimal?
+  repeatClients               Int?                          @default(0)
+  regulatoryApprovals         String?
+  blacklisted                 Boolean                       @default(false)
+  ratings                     Decimal?
+  website                     String?
+  linkedinProfile             String?
+  status                      SyndicatorStatus              @default(ACTIVE)
+  lastLogin                   DateTime?
+  notes                       String?
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+  syndicateId                 Int?
+  lastName                    String?
+  address1                    String
+  address2                    String?
+  city                        String
+  state                       String
+  zip                         String
+  loginEnabled                Boolean?
+  password                    String?
+  currentBalance              Decimal                       @default(0)
+  userId                      String?                       @unique @db.Uuid
+  syndicate                   Syndicate?                    @relation(fields: [syndicateId], references: [id], onDelete: Cascade)
+  users                       User?                         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_syndicator_user")
+  SyndicatorBankInformation   SyndicatorBankInformation[]
+  SyndicatorMember            SyndicatorMember[]
+  Notification                SyndicatorNotification[]
+  SyndicatorPaymentSetting    SyndicatorPaymentSetting?
+  SyndicatorSetting           SyndicatorSetting?
+  transactionHistory          SyndicatorTransaction[]
+  SyndicatorWalletTransaction SyndicatorWalletTransaction[]
+  SyndicatorWithdrawalRequest SyndicatorWithdrawalRequest[]
+  applications                Application[]                 @relation("ApplicationSyndicators")
+}
+
+model SyndicatorWithdrawalRequest {
+  id               Int                               @id @default(autoincrement())
+  syndicatorId     Int
+  amount           Decimal                           @db.Decimal(14, 2)
+  transactionType  String?
+  comment          String?
+  payoutDate       DateTime?
+  status           SyndicatorWithdrawalRequestStatus @default(PENDING)
+  reviewedAt       DateTime?
+  reviewedByUserId String?                           @db.Uuid
+  createdAt        DateTime                          @default(now())
+  updatedAt        DateTime                          @updatedAt
+  syndicator       Syndicator                        @relation(fields: [syndicatorId], references: [id], onDelete: Cascade)
+
+  @@index([syndicatorId, status])
+}
+
+model SyndicatorTransaction {
+  syndicatorId        Int
+  id                  Int        @id @default(autoincrement())
+  authCode            String
+  billingCycle        Int
+  consumerUnique      String
+  createdAt           DateTime   @default(now())
+  currency            String
+  customerName        String
+  customerPhone       String
+  historyId           String
+  initialAmount       Float
+  merchantOrderNumber String
+  orderId             String
+  parentId            String
+  paymentType         String
+  status              String
+  subId               String
+  updatedAt           DateTime   @updatedAt
+  paymentMethod       String?
+  paymentProcessor    String?
+  syndicator          Syndicator @relation(fields: [syndicatorId], references: [id], onDelete: Cascade)
+}
+
+model SyndicatorWalletTransaction {
+  id            Int        @id @default(autoincrement())
+  syndicatorId  Int
+  amount        Decimal
+  description   String
+  merchantName  String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  prevBalance   Decimal
+  applicationId String?    @db.Uuid
+  date          DateTime
+  paymentType   String
+  history_id    String?    @default("")
+  syndicator    Syndicator @relation(fields: [syndicatorId], references: [id], onDelete: Cascade)
+}
+
+model Offers {
+  id                      Int         @id @default(autoincrement())
+  syndicateId             Int
+  merchantName            String?
+  fundedAmount            String?
+  factorRate              String?
+  commissionPercent       String?
+  paybackAmount           String?
+  termLength              String?
+  principalSyndicated     String?
+  minPercent              String?
+  maxPercent              String?
+  principalToBePaid       String?
+  feePercentage           String?
+  totalToBePaid           String?
+  calculationLogic        String?
+  applicationId           String      @db.Uuid
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  syndicatedPaybackAmount String?
+  syndicateName           String?
+  status                  String?
+  application             Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  syndicate               Syndicate   @relation(fields: [syndicateId], references: [id], onDelete: Cascade)
+}
+
+model Syndications {
+  id                      Int        @id @default(autoincrement())
+  syndicateName           String?
+  principalSyndicated     String?
+  percentSyndicated       String?
+  principalToBePaid       String?
+  feePercentage           String?
+  commission              String?
+  factorRate              String?
+  totalToBePaid           String?
+  paybackAmount           String?
+  calculationLogic        String?
+  syndicateId             Int?
+  syndicatedPaybackAmount String?
+  createdAt               DateTime   @default(now())
+  fundingName             String?
+  termLength              String?
+  updatedAt               DateTime   @updatedAt
+  fundedAmount            String?
+  syndicatorId            Int?
+  applicationId           String?    @db.Uuid
+  status                  String?
+  syndicate               Syndicate? @relation(fields: [syndicateId], references: [id], onDelete: Cascade)
+}
+
+model SyndicatorPaymentSetting {
+  syndicatorId         Int                 @unique
+  interestRate         Decimal?
+  gracePeriodDays      Int?
+  lateFeeAmount        Decimal?
+  maxOutstandingAmount Decimal?
+  minMonthlyPayment    Decimal?
+  paymentDueDay        Int?
+  autoRepayEnabled     Boolean?            @default(false)
+  paymentMethod        PaymentMethod
+  paymentProcessor     PaymentProcessor?
+  repaymentMethod      RepaymentMethod
+  repaymentProcessor   RepaymentProcessor?
+  paymentCurrency      String?
+  paymentDetails       Json?
+  transactionLimit     Decimal?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  id                   Int                 @id @default(autoincrement())
+  repaymentPlan        RepaymentPlan?
+  syndicator           Syndicator          @relation(fields: [syndicatorId], references: [id], onDelete: Cascade)
+}
+
+model SyndicatorSetting {
+  id                     Int        @id @default(autoincrement())
+  feePercentage          Decimal    @default(0.00) @db.Decimal
+  calculationLogic       String?    @default("PRINCIPAL_SYNDICATED_AMOUNT")
+  frequency              String?    @default("DAILY")
+  automaticACH           Boolean?   @default(false)
+  notificationRecipients String[]
+  syndicatorId           Int        @unique
+  createdAt              DateTime?  @default(now()) @db.Timestamp(6)
+  updatedAt              DateTime?  @default(now()) @db.Timestamp(6)
+  paymentDays            String[]
+  syndicator             Syndicator @relation(fields: [syndicatorId], references: [id], onDelete: Cascade)
+}
+
+model SyndicatorMember {
+  id           Int          @id @default(autoincrement())
+  syndicatorId Int
+  firstName    String
+  email        String       @unique
+  phoneNumber  String?
+  experience   Int?
+  linkedIn     String?
+  status       MemberStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  lastName     String?
+  password     String?
+  loginEnabled Boolean?
+  syndicator   Syndicator   @relation(fields: [syndicatorId], references: [id], onDelete: Cascade)
+}
+
+model SyndicatorNotification {
+  syndicatorId     Int
+  title            String
+  message          String
+  notificationType NotificationType
+  readStatus       ReadStatus       @default(UNREAD)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  id               Int              @id @default(autoincrement())
+  syndicator       Syndicator       @relation(fields: [syndicatorId], references: [id])
+}
+
+model RepaymentPlan {
+  id                         Int                       @id @default(autoincrement())
+  frequency                  PaymentFrequency?
+  paymentDays                String[]
+  repaymentMethod            RepaymentMethod
+  repaymentProcessor         RepaymentProcessor?
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
+  bankId                     Int?
+  syndicatorPaymentSettingId Int?                      @unique
+  syndicatorPaymentSetting   SyndicatorPaymentSetting? @relation(fields: [syndicatorPaymentSettingId], references: [id])
+}
+
+model SyndicatorBankInformation {
+  id                Int         @id @default(autoincrement())
+  bankName          String
+  routingNumber     String
+  accountNumber     String
+  branch            String?
+  dda               String?
+  nameOnVoidedCheck String?
+  accountType       AccountType @default(SAVINGS)
+  syndicatorId      Int
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  syndicator        Syndicator  @relation(fields: [syndicatorId], references: [id], onDelete: Cascade)
+}
+
+enum SyndicatorWithdrawalRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+enum SyndicateStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+  SUSPENDED
+}
+
+enum SyndicateTransactionType {
+  PAYMENT
+  INTEREST_PAYMENT
+  PRINCIPAL_PAYMENT
+  FEES
+  OTHER
+}
+
+enum SyndicatorTransactionType {
+  DEAL_SIGNED
+  LOAN_ISSUED
+  LOAN_REPAID
+  INTEREST_PAYMENT
+  OTHER
+}
+
+enum SyndicatorRole {
+  LEAD_ARRANGER
+  CO_ARRANGER
+  PARTICIPANT
+}
+
+enum SyndicatorStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum NotificationType {
+  TRANSACTION_UPDATE
+  SYNDICATE_UPDATE
+  REMINDER
+  ALERT
+  GENERAL
+}
+
+enum ReadStatus {
+  READ
+  UNREAD
+}
+
+enum RepaymentMethod {
+  ACH
+  CHECK
+  CREDIT_CARD
+  DEBIT_CARD
+  WIRE_TRANSFER
+  MOBILE_PAYMENT
+  BANK_DRAFT
+  PAYPAL
+  OTHER
+}
+
+enum RepaymentProcessor {
+  ACTUM
+  STRIPE
+  PAYPAL
+  OTHER
+}

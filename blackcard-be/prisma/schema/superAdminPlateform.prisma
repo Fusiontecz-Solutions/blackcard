@@ -1,0 +1,39 @@
+/// Cached platform-wide KPIs for super-admin reporting (refreshed on a schedule).
+model SuperAdminPlateform {
+  id                        String   @id @default("platform")
+  clientCount               Int      @default(0)
+  isoCount                  Int      @default(0)
+  /// All applications in the tenant.
+  totalDealsCount           Int      @default(0)
+  /// Applications in the funded bucket (Funded / Disbursement queues — same as payment history cohort).
+  fundedDealsCount          Int      @default(0)
+  /// @deprecated Use fundedDealsCount — kept for backward compatibility.
+  dealCount                 Int      @default(0)
+  /// Deals included in commission portal aggregation (latest N applications).
+  commissionPortalDealCount Int      @default(0)
+  /// @deprecated Use commissionPortalDealCount.
+  commissionDealsFunded     Int      @default(0)
+  totalCommission           Decimal  @default(0) @db.Decimal(14, 2)
+  commissionPaid            Decimal  @default(0) @db.Decimal(14, 2)
+  commissionPending         Decimal  @default(0) @db.Decimal(14, 2)
+  commissionProcessing      Decimal  @default(0) @db.Decimal(14, 2)
+  commissionApproved        Decimal  @default(0) @db.Decimal(14, 2)
+  commissionClawback        Decimal  @default(0) @db.Decimal(14, 2)
+  totalFundedVolume         Decimal  @default(0) @db.Decimal(14, 2)
+  fundedTotal               Decimal  @default(0) @db.Decimal(14, 2)
+  netFundingTotal           Decimal  @default(0) @db.Decimal(14, 2)
+  abovePrincipalTotal       Decimal  @default(0) @db.Decimal(14, 2)
+  recoveredAmount           Decimal  @default(0) @db.Decimal(14, 2)
+  failedPaymentAmount       Decimal  @default(0) @db.Decimal(14, 2)
+  failedPaymentCount        Int      @default(0)
+  dueToday                  Decimal  @default(0) @db.Decimal(14, 2)
+  dueNext7Days              Decimal  @default(0) @db.Decimal(14, 2)
+  totalDues                 Decimal  @default(0) @db.Decimal(14, 2)
+  totalPayback              Decimal  @default(0) @db.Decimal(14, 2)
+  collectionEfficiency      Float    @default(0)
+  lastRefreshedAt           DateTime @default(now())
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("SuperAdminPlateform")
+}

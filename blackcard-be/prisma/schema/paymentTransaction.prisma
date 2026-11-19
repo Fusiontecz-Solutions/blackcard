@@ -1,0 +1,125 @@
+model Transaction {
+  id              String               @id @default(cuid())
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  acct_type       AccountTypeCode
+  action_code     ActionCode?
+  addenda         String?
+  billing_cycle   String
+  birth_date      String?
+  chk_aba         String
+  chk_acct        String
+  creditflag      Boolean?
+  currency        Currency
+  custaddress1    String?
+  custaddress2    String?
+  custcity        String?
+  custemail       String?
+  custname        String
+  custphone       String
+  custssn         String?
+  custstate       String?
+  custzip         String?
+  days_til_recur  Int?
+  futureinitial   String?
+  idempotence     String?
+  initial_amount  String
+  ip_forward      String
+  max_num_billing Int                  @default(-1)
+  merordernumber  String?
+  parent_id       String
+  pmt_type        PaymentType
+  realtime        Boolean?
+  recur_amount    String?
+  retry_fee_amt   String?
+  sub_id          String
+  trans_modifier  TransactionModifier?
+}
+
+model ApplicationTransaction {
+  id            Int      @id @default(autoincrement())
+  applicationId Int
+  merchantName  String
+  date          DateTime
+  amount        Decimal
+  category      String
+  paymentType   String
+  description   String
+  history_id    String?  @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ProcessedActumFiles {
+  id        Int      @id @default(autoincrement())
+  fileName  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SkippedActumTransactions {
+  id               Int       @id @default(autoincrement())
+  fileName         String
+  applicationId    String?   @db.Uuid
+  merchantName     String?
+  date             DateTime?
+  amount           Decimal
+  category         String?
+  paymentType      String?
+  description      String?
+  orderNumber      String
+  consumerUniqueID String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model ApplicationBalanceHistory {
+  id               Int      @id @default(autoincrement())
+  applicationId    Int
+  balanceDate      DateTime
+  status           String?
+  amountPaidToDate Decimal
+  balance          Decimal
+  balanceWithFees  Decimal?
+  change           Decimal
+  history_id       String?  @default("")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+enum PaymentType {
+  chk
+  credit
+  refund
+  revoke
+  recurring
+}
+
+enum AccountTypeCode {
+  C
+  S
+}
+
+enum Currency {
+  US
+  CAN
+}
+
+enum ActionCode {
+  P
+  R
+  K
+  C
+  M
+  O
+  D
+  A
+  E
+  B
+}
+
+enum TransactionModifier {
+  S
+  N
+  Y
+}

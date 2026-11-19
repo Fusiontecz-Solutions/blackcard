@@ -1,0 +1,1 @@
+ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "isoUpdatedOfferApproved" BOOLEAN NOT NULL DEFAULT false;

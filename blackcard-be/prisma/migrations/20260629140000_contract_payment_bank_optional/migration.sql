@@ -1,0 +1,1 @@
+ALTER TABLE "Contract" ALTER COLUMN "paymentBankId" DROP NOT NULL;
