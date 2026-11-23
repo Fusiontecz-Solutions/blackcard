@@ -1,0 +1,76 @@
+name: Deploy frontend
+
+# Push to main touching blackcard-fe/ = production frontend deploy on the self-hosted runner
+# (server 72.14.186.251, runner label `blackcard`). Same flow as Gradan: build in the checkout,
+# then copy into the live folder and restart the pm2 wrapper. The live .env stays on the server.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "blackcard-fe/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+concurrency: production-blackcard-fe
+
+env:
+  RUNNER_TRACKING_ID: ""
+  FE_DIR: /var/www/blackcard/Frontend/FE
+  WRAPPER_DIR: /var/www/blackcard/Frontend
+  FE_PM2: blackcard-frontend
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, blackcard]
+    defaults:
+      run:
+        working-directory: blackcard-fe
+    steps:
+      - name: Check live folder
+        working-directory: .
+        run: |
+          [ -d "$FE_DIR" ] || { echo "Missing $FE_DIR - create it on the server first."; exit 1; }
+
+      - uses: actions/checkout@v4
+
+      - name: Load Node
+        working-directory: .
+        run: |
+          if [ -s "$HOME/.nvm/nvm.sh" ]; then . "$HOME/.nvm/nvm.sh"; dirname "$(nvm which default)" >> "$GITHUB_PATH"; fi
+          node -v || { echo "Node is not installed for the runner user."; exit 1; }
+
+      # The frontend build bakes env values in, so use the live folder's .env.
+      - name: Copy env into checkout
+        run: cp "$FE_DIR"/.env* ./ 2>/dev/null || true
+
+      - name: Build frontend
+        run: |
+          npm ci || npm install
+          npm run build
+
+      - name: Go live
+        run: |
+          rsync -a --delete --exclude '/.git' --exclude '/.env*' --exclude '/node_modules' ./ "$FE_DIR/"
+          if ! diff <(cd dist && find . -type f | sort) <(cd "$FE_DIR/dist" && find . -type f | sort) > /dev/null; then
+            echo "dist copy is incomplete"; exit 1
+          fi
+          if pm2 describe "$FE_PM2" >/dev/null 2>&1; then
+            pm2 restart "$FE_PM2" --update-env
+          elif [ -f "$WRAPPER_DIR/ecosystem.config.js" ]; then
+            cd "$WRAPPER_DIR" && pm2 restart ecosystem.config.js --update-env
+          elif [ -f "$WRAPPER_DIR/ecosystem.config.cjs" ]; then
+            cd "$WRAPPER_DIR" && pm2 restart ecosystem.config.cjs --update-env
+          else
+            echo "pm2 app '$FE_PM2' not found (pm2 ls)"; pm2 ls; exit 1
+          fi
+          pm2 save
+
+      - name: Health check
+        working-directory: .
+        run: |
+          for i in $(seq 1 12); do
+            status=$(pm2 jlist | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const a=JSON.parse(s).find(p=>p.name===process.env.FE_PM2);console.log(a?a.pm2_env.status:'missing')})")
+            [ "$status" = online ] && { echo "frontend online"; exit 0; }
+            sleep 5
+          done
+          echo "frontend not online ($status)"; pm2 logs "$FE_PM2" --lines 50 --nostream; exit 1

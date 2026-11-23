@@ -1,0 +1,79 @@
+name: Deploy backend
+
+# Push to main touching blackcard-be/ = production backend deploy on the self-hosted runner
+# (server 72.14.186.251, runner label `blackcard`). Same flow as Gradan: build and test in the
+# checkout first, then copy into the live folder and reload pm2. The live .env stays on the server.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "blackcard-be/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+concurrency: production-blackcard-be
+
+env:
+  # The self-hosted runner kills processes tagged with its tracking id when the job ends;
+  # blank it so pm2 --update-env does not hand it to the app.
+  RUNNER_TRACKING_ID: ""
+  BE_DIR: /var/www/blackcard/BE
+  BE_PM2: blackcard-backend
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, blackcard]
+    defaults:
+      run:
+        working-directory: blackcard-be
+    steps:
+      - name: Check live folder
+        working-directory: .
+        run: |
+          [ -f "$BE_DIR/.env" ] || { echo "Missing $BE_DIR/.env - create it on the server first."; exit 1; }
+
+      - uses: actions/checkout@v4
+
+      - name: Load Node
+        working-directory: .
+        run: |
+          if [ -s "$HOME/.nvm/nvm.sh" ]; then . "$HOME/.nvm/nvm.sh"; dirname "$(nvm which default)" >> "$GITHUB_PATH"; fi
+          node -v || { echo "Node is not installed for the runner user."; exit 1; }
+
+      - name: Copy env into checkout
+        run: cp "$BE_DIR"/.env* ./ 2>/dev/null || true
+
+      # Build before touching anything live. A failure here leaves production untouched.
+      - name: Build backend
+        run: npm run build
+
+      - name: Update database schema
+        run: npx prisma db push
+
+      - name: Go live
+        run: |
+          # Anchored excludes only match top-level folders on the server.
+          rsync -a --delete --exclude '/.git' --exclude '/.env*' --exclude '/uploads' --exclude '/logs' ./ "$BE_DIR/"
+          # Every built file must have reached the live folder before pm2 restarts.
+          if ! diff <(cd dist && find . -type f | sort) <(cd "$BE_DIR/dist" && find . -type f | sort) > /dev/null; then
+            echo "dist copy is incomplete"; exit 1
+          fi
+          cd "$BE_DIR"
+          if pm2 describe "$BE_PM2" >/dev/null 2>&1; then
+            pm2 restart "$BE_PM2" --update-env
+          else
+            pm2 start dist/index.js --name "$BE_PM2"
+          fi
+          pm2 save
+
+      - name: Health check
+        working-directory: .
+        run: |
+          PORT=$(grep -E '^PORT=' "$BE_DIR/.env" | tail -1 | cut -d= -f2 | tr -d '"'"'"' \r')
+          PORT=${PORT:-4000}
+          for i in $(seq 1 24); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/health" || true)
+            [ "$code" = 200 ] && { echo "backend OK on $PORT"; exit 0; }
+            sleep 5
+          done
+          echo "backend health failed ($code) on port $PORT"; pm2 logs "$BE_PM2" --lines 50 --nostream; exit 1
