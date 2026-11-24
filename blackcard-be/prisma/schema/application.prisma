@@ -299,6 +299,7 @@ model Application {
   FundingInfo                     FundingInfo?
   gmailAutoCreateLedger           GmailAutoCreateLedger[]
   isoApplicationPayouts           IsoApplicationPayout[]
+  dealLedgerEntries               DealLedgerEntry[]
   isoCommissionSchedules          IsoCommissionSchedule[]
   months                          Month[]
   notes                           Note[]

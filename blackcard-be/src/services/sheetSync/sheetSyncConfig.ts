@@ -28,6 +28,26 @@ export type SheetSyncConfig = {
      * CRM name. Columns not listed here must match a CRM syndicator by name.
      */
     syndicatorAliases: Record<string, string>;
+    /**
+     * Optional second deals tab that fills fields the deals tab leaves blank, matched by Deal ID
+     * (e.g. "Contract Daily" lives only on "Main Sheet"). Never overrides a value the deals tab has.
+     */
+    supplementTab?: {
+        name: string;
+        skipRowsAfterHeader: number;
+        /** Normalised header of the Deal ID column. */
+        dealIdHeader: string;
+        columns: Record<string, DealField>;
+    };
+    /**
+     * Optional full bank ledger tab: rows whose Type is a key of `kinds` and whose Account is a
+     * Deal ID become funding / commission entries for that deal (DealLedgerEntry).
+     */
+    ledgerTab?: {
+        name: string;
+        columns: { date: string; description: string; amount: string; dealId: string; type: string };
+        kinds: Record<string, 'FUNDING' | 'COMMISSION'>;
+    };
     paymentColumns: {
         date: string;
         description: string;
@@ -48,6 +68,7 @@ export type DealField =
     | 'offer'
     | 'rate'
     | 'commission'
+    | 'fees'
     | 'refinanceAmount'
     | 'repayPerPeriod'
     | 'term'
@@ -69,6 +90,8 @@ export const BLACKCARD_SHEET_SYNC_CONFIG: SheetSyncConfig = {
         funding: 'offer',
         factor: 'rate',
         com: 'commission',
+        // "live Bank Fee": fee dollars kept from the funding (OfferDecision.fees).
+        livebankfee: 'fees',
         refi: 'refinanceAmount',
         daily: 'repayPerPeriod',
         term: 'term',
@@ -79,7 +102,6 @@ export const BLACKCARD_SHEET_SYNC_CONFIG: SheetSyncConfig = {
         'payback',
         'livefunding',
         'livepayback',
-        'livebankfee',
         'livenet',
         'actualdaily',
         'balance',
@@ -90,6 +112,20 @@ export const BLACKCARD_SHEET_SYNC_CONFIG: SheetSyncConfig = {
         'notes',
     ],
     syndicatorAliases: {},
+    // "Daily" on Main Sheet-New is empty; the contract daily/weekly payment is on "Main Sheet".
+    supplementTab: {
+        name: 'Main Sheet',
+        skipRowsAfterHeader: 1,
+        dealIdHeader: 'dealid',
+        columns: { contractdaily: 'repayPerPeriod' },
+    },
+    // "Bank1" is the bank account ledger: Type "Funding" = wires to the merchant,
+    // "Commission" = ISO commission payouts; Account holds the Deal ID.
+    ledgerTab: {
+        name: 'Bank1',
+        columns: { date: 'Date', description: 'Description', amount: 'Amount', dealId: 'Account', type: 'Type' },
+        kinds: { funding: 'FUNDING', commission: 'COMMISSION' },
+    },
     paymentColumns: {
         date: 'Date',
         description: 'Description',
@@ -100,6 +136,16 @@ export const BLACKCARD_SHEET_SYNC_CONFIG: SheetSyncConfig = {
         returnDate: 'Bounce Date',
     },
 };
+
+/** Tabs a sync must have. */
+export const requiredSheetTabs = (config: SheetSyncConfig): string[] => [config.dealsTab, config.paymentsTab];
+
+/** Every tab a sync reads: the required ones plus the optional supplement tab. */
+export const readSheetTabNames = (config: SheetSyncConfig): string[] => [
+    ...requiredSheetTabs(config),
+    ...(config.supplementTab ? [config.supplementTab.name] : []),
+    ...(config.ledgerTab ? [config.ledgerTab.name] : []),
+];
 
 /** Lower-case and keep only letters/digits: "Deal Name " → "dealname", "% Paid " → "paid". */
 export function normalizeSheetHeader(header: unknown): string {

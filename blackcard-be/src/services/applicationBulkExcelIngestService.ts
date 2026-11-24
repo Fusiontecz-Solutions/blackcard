@@ -620,7 +620,7 @@ async function ensureClientByDealName(
 }
 
 /** Parse percent-like cells for rate columns (`1.39%`, `0.0139`, `1.39`). */
-function parseRateToNumber(v: unknown): number | null {
+export function parseRateToNumber(v: unknown): number | null {
     if (v === null || v === undefined) return null;
     if (typeof v === 'number' && Number.isFinite(v)) {
         // Excel often stores percentage-formatted cells as fractions (e.g. 1.39% -> 0.0139).
@@ -988,6 +988,12 @@ export async function ingestApplicationBulkRows(
             const offerNum = parseMoneyToNumber(raw.offer);
             const feesNum = parseMoneyToNumber(raw.fees);
             const rateNum = parseRateToNumber(raw.rate);
+            // Payback (OfferDecision.totalRemit) drives the deal balance on the payments dashboard;
+            // without it balances read as 0. Only a factor-style rate (e.g. 1.5) yields a payback.
+            const totalRemitNum =
+                offerNum != null && offerNum > 0 && rateNum != null && rateNum >= 1 && rateNum <= 5
+                    ? Math.round(offerNum * rateNum * 100) / 100
+                    : null;
             const commissionRaw = trimStr(raw.commission);
             const commissionParsed = commissionRaw
                 ? parseMoneyToNumber(raw.commission)
@@ -1078,6 +1084,7 @@ export async function ingestApplicationBulkRows(
                         };
                         if (offerNum != null) offerUpdate.offer = offerNum;
                         if (feesNum != null) offerUpdate.fees = feesNum;
+                        if (totalRemitNum != null) offerUpdate.totalRemit = totalRemitNum;
                         if (rateNum != null) offerUpdate.rate = rateNum;
                         if (termRaw) {
                             offerUpdate.term = termStored;
@@ -1101,6 +1108,7 @@ export async function ingestApplicationBulkRows(
                                 decision: 'IMPORTED',
                                 offer: offerNum ?? 0,
                                 rate: rateNum,
+                                totalRemit: totalRemitNum,
                                 fees: feesNum ?? 0,
                                 term: termStored,
                                 frequency: frequencyStored,
@@ -1182,6 +1190,7 @@ export async function ingestApplicationBulkRows(
                             decision: 'IMPORTED',
                             offer: offerDec,
                             rate: rateNum,
+                            totalRemit: totalRemitNum,
                             fees: feesDec,
                             term: termStored,
                             frequency: frequencyStored,

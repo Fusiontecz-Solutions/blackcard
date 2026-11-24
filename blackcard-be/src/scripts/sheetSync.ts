@@ -28,7 +28,7 @@ if (envFile) dotenv.config({ path: path.resolve(envFile), override: true });
 
 async function main(): Promise<void> {
     const { default: prisma } = await import('../config/prismaClient');
-    const { BLACKCARD_SHEET_SYNC_CONFIG: config } = await import('../services/sheetSync/sheetSyncConfig');
+    const { BLACKCARD_SHEET_SYNC_CONFIG: config, readSheetTabNames } = await import('../services/sheetSync/sheetSyncConfig');
     const { readSheetTabs } = await import('../services/sheetSync/sheetSource');
     const { planSheetSync, applySheetSync } = await import('../services/sheetSync/sheetSyncService');
 
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
 
     const tabs = await readSheetTabs(
         file ? { kind: 'file', path: file } : linkId ? { kind: 'link', spreadsheetId: linkId } : { kind: 'google', spreadsheetId: spreadsheetId! },
-        [config.dealsTab, config.paymentsTab],
+        readSheetTabNames(config),
     );
 
     const plan = await prisma.$transaction(
@@ -78,6 +78,14 @@ async function main(): Promise<void> {
     console.log('Syndicator columns:', plan.syndicators.mapped);
     if (plan.syndicators.unknown.length) console.log('Syndicator columns held (no CRM syndicator):', plan.syndicators.unknown);
     console.log(`Deals getting syndicators filled: ${plan.syndicators.filledDeals} | different split kept: ${plan.syndicators.differentSplitDeals.length}`);
+    const l = plan.ledger;
+    if (l.enabled) {
+        console.log(
+            `Funding/commission: ${l.sheetRows} sheet rows | already in CRM ${l.alreadyInCrm} | to add ${l.toAdd.length} | ` +
+                `to remove ${l.toRemove.length} | unmatched ${l.unmatched.length} | funding wired $${l.totals.fundingWired.toFixed(2)} | ` +
+                `commission paid $${l.totals.commissionPaid.toFixed(2)} | commission fully paid deals ${l.commissionPaid.length}`,
+        );
+    }
     for (const note of plan.notes) console.log('Note:', note);
     console.log(`\nFull plan: ${planFile}`);
 
@@ -94,6 +102,9 @@ async function main(): Promise<void> {
         dealsUpdated: result.deals?.updatedCount ?? 0,
         dealErrors: result.deals?.failedCount ?? 0,
         dealIdsSet: result.dealIdsSet,
+        dealsMovedToFunded: result.dealsMovedToFunded,
+        paybacksSet: result.paybacksSet,
+        ledger: result.ledger,
         paymentsAdded: result.paymentsAdded,
         paymentsSkippedAsDuplicate: result.paymentsSkippedAsDuplicate,
         paymentErrors: result.paymentErrors.length,

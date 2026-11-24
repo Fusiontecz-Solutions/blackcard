@@ -34,6 +34,7 @@ import DecisionMakeFinalValues from "@/components/application/DecisionMakeFinalV
 import { prefetchPaymentTemplates } from "./paymentTemplateApi";
 import { DealHero, DealSidebar } from "./dealsPortfolio/DealHero";
 import Transactions from "./Transactions";
+import FundingCommissionTab from "./FundingCommissionTab";
 import Templates from "./Templates";
 import Letters from "./Letters";
 import MailLogs from "./MailLogs";
@@ -51,12 +52,14 @@ type TabId =
   | "mailLogs"
   | "actionLogs"
   | "communication"
-  | "syndication";
+  | "syndication"
+  | "fundingCommission";
   
 
 const tabs: { id: TabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "collections", label: "Transactions" },
+  { id: "fundingCommission", label: "Funding & Commission" },
   { id: "templates", label: "Templates" },
   { id: "letters", label: "Letters" },
   { id: "mailLogs", label: "Mail logs" },
@@ -403,6 +406,9 @@ export default function PaymentDealById({
             )}
 
             {activeTab === "collections" && <Transactions />}
+            {activeTab === "fundingCommission" && applicationUuid && (
+              <FundingCommissionTab applicationId={applicationUuid} />
+            )}
             {activeTab === "templates" && <Templates />}
             {activeTab === "letters" && <Letters />}
             {activeTab === "mailLogs" && <MailLogs />}

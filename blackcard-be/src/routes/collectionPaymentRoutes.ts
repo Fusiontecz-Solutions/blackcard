@@ -1,12 +1,14 @@
 import express from 'express';
 import collectionPaymentController from '../controllers/collectionPaymentController';
 import { authenticateToken } from '../middleware/authMiddleware';
+import { getDealLedger } from '../controllers/dealLedgerController';
 
 const router = express.Router();
 
 router.use(authenticateToken);
 
 router.get('/dashboard', collectionPaymentController.dashboard.bind(collectionPaymentController));
+router.get('/deal-ledger/:applicationId', getDealLedger);
 router.get(
   '/financial-overview/summary',
   collectionPaymentController.financialOverviewSummary.bind(collectionPaymentController),

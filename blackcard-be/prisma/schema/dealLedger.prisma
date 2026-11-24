@@ -1,0 +1,25 @@
+/// Money moved for a deal outside merchant repayments: funding wires to the merchant and ISO
+/// commission payouts. Filled by the Google Sheet sync (bank ledger tab); the sheet is the source,
+/// so rows with source SHEET_SYNC are added/removed to match it on every applied sync.
+model DealLedgerEntry {
+  id            String         @id @default(uuid()) @db.Uuid
+  applicationId String         @db.Uuid
+  /// Deal ID as written on the sheet (e.g. BK1001), kept for lookups and audit.
+  dealId        String
+  kind          DealLedgerKind
+  entryDate     DateTime       @db.Date
+  /// Money paid out (wire to merchant, commission to ISO) is positive; money returned is negative.
+  amount        Decimal        @db.Decimal(18, 2)
+  description   String
+  source        String         @default("SHEET_SYNC")
+  createdAt     DateTime       @default(now())
+  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, kind])
+  @@index([dealId])
+}
+
+enum DealLedgerKind {
+  FUNDING
+  COMMISSION
+}

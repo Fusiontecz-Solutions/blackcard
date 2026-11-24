@@ -5,10 +5,15 @@
  *   SYNC_URL     https://<backend>/api/v1/sheet-sync      (local test: an ngrok URL to localhost)
  *   SYNC_SECRET  same value as SHEET_SYNC_PUSH_SECRET in the backend env
  *
- * The script only READS the sheet. It sends the two tabs to the backend, which decides what
+ * The script only READS the sheet. It sends these tabs to the backend, which decides what
  * to change in the CRM (dry run unless the backend env allows writes).
  */
 var TABS = ['Main Sheet-New', 'PMT'];
+/**
+ * Sent when present: "Main Sheet" fills fields Main Sheet-New leaves blank (Contract Daily);
+ * "Bank1" supplies funding wires and ISO commission payouts.
+ */
+var OPTIONAL_TABS = ['Main Sheet', 'Bank1'];
 
 function onOpen() {
   SpreadsheetApp.getUi()
@@ -54,9 +59,12 @@ function push_(dryRun) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var tz = ss.getSpreadsheetTimeZone();
   var tabs = {};
-  TABS.forEach(function (name) {
+  TABS.concat(OPTIONAL_TABS).forEach(function (name) {
     var sheet = ss.getSheetByName(name);
-    if (!sheet) throw new Error('Tab "' + name + '" not found.');
+    if (!sheet) {
+      if (OPTIONAL_TABS.indexOf(name) >= 0) return;
+      throw new Error('Tab "' + name + '" not found.');
+    }
     tabs[name] = sheet.getDataRange().getValues().map(function (row) {
       return row.map(function (v) { return toCell_(v, tz); });
     });

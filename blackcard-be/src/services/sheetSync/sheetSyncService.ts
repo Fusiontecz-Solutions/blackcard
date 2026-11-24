@@ -3,6 +3,7 @@ import prisma from '../../config/prismaClient';
 import {
     baseBusinessNameForClientDedupe,
     ingestApplicationBulkRows,
+    parseRateToNumber,
     parseExcelDate,
     parseMoneyToNumber,
     type BulkImportSummary,
@@ -13,6 +14,7 @@ import { distributeSyndicatorCreditsForPayments } from '../syndicatorRepaymentSe
 import { syndicatorNameKey, type ParsedRowSyndicators } from '../applicationSyndicatorImportService';
 import { normalizeSheetHeader, type DealField, type SheetSyncConfig } from './sheetSyncConfig';
 import type { SheetTabs } from './sheetSource';
+import { applyLedger, planLedger, type LedgerApplyResult, type LedgerPlan } from './sheetLedgerSync';
 
 /**
  * Google Sheet → CRM sync for one book.
@@ -79,8 +81,21 @@ type CrmDeal = {
     term: string | null;
     refinanceAmount: number | null;
     repayPerPeriod: number | null;
+    fees: number | null;
+    offer: number | null;
+    totalRemit: number | null;
+    currentQueue: string | null;
     syndicators: Array<{ syndicatorId: number; name: string; percent: number }>;
 };
+
+/** Queues the All Deals (payments) dashboard lists — see applicationStatsBucketWhere "funded". */
+const ALL_DEALS_QUEUES = new Set(['funded', 'disbursement', 'disbursment']);
+
+/** Payback = funded × factor, only for a factor-style rate (1–5); matches the sheet's Payback column. */
+function paybackFrom(funded: number | null, rate: number | null): number | null {
+    if (funded === null || funded <= 0 || rate === null || rate < 1 || rate > 5) return null;
+    return Math.round(funded * rate * 100) / 100;
+}
 
 export type DealAction = 'create' | 'update' | 'unchanged' | 'conflict';
 
@@ -100,6 +115,10 @@ export type DealPlan = {
     fillSyndicators?: Array<{ name: string; percent: number }>;
     /** Row handed to the bulk import when the plan is applied. */
     ingestRow?: Record<string, unknown>;
+    /** Matched CRM deal sits in a queue All Deals does not list; move it to Funded. */
+    moveToFunded?: boolean;
+    /** Matched CRM deal has no payback (OfferDecision.totalRemit); fill it so balances work. */
+    setPayback?: number;
 };
 
 export type PaymentPlan = {
@@ -114,6 +133,8 @@ export type SheetSyncPlan = {
     deals: DealPlan[];
     dealCounts: Record<DealAction, number>;
     payments: PaymentPlan;
+    /** Funding wires and ISO commission payouts from the bank ledger tab. */
+    ledger: LedgerPlan;
     syndicators: {
         columns: string[];
         /** Sheet column → CRM syndicator it maps to. */
@@ -302,6 +323,45 @@ export function parseDealsTab(
     return { deals, syndicatorColumns: syndicatorColumns.map((c) => c.name), notes };
 }
 
+/** Fills blank deal fields from the optional supplement tab (matched by Deal ID). Mutates `deals`. */
+export function applySupplementTab(
+    deals: SheetDeal[],
+    rows: unknown[][] | undefined,
+    config: SheetSyncConfig,
+    notes: string[],
+): void {
+    const sup = config.supplementTab;
+    if (!sup) return;
+    if (!rows?.length) {
+        notes.push(`Tab "${sup.name}" not provided; fields it supplies were not filled.`);
+        return;
+    }
+    const header = (rows[0] ?? []).map((h) => normalizeSheetHeader(h));
+    const idCol = header.indexOf(sup.dealIdHeader);
+    if (idCol < 0) {
+        notes.push(`Tab "${sup.name}" has no Deal ID column; skipped.`);
+        return;
+    }
+    const cols = Object.entries(sup.columns)
+        .map(([h, field]) => ({ index: header.indexOf(h), field, header: h }))
+        .filter((c) => {
+            if (c.index < 0) notes.push(`Tab "${sup.name}" has no "${c.header}" column.`);
+            return c.index >= 0;
+        });
+    const byId = new Map<string, unknown[]>();
+    for (const row of rows.slice(1 + sup.skipRowsAfterHeader)) {
+        const id = text(row[idCol]).toUpperCase();
+        if (id && !byId.has(id)) byId.set(id, row);
+    }
+    for (const d of deals) {
+        const row = byId.get(d.dealId);
+        if (!row) continue;
+        for (const c of cols) {
+            if (text(d.fields[c.field]) === '' && text(row[c.index]) !== '') d.fields[c.field] = row[c.index];
+        }
+    }
+}
+
 export function parsePaymentsTab(rows: unknown[][], config: SheetSyncConfig): SheetPayment[] {
     const header = (rows[0] ?? []).map((h) => normalizeSheetHeader(h));
     const col = (name: string): number => {
@@ -365,6 +425,7 @@ async function loadCrmDeals(db: Db): Promise<CrmDeal[]> {
             status: true,
             type: true,
             commissionAmount: true,
+            currentQueue: true,
             createdAt: true,
             deletedAt: true,
             client: { select: { businessName: true } },
@@ -375,7 +436,16 @@ async function loadCrmDeals(db: Db): Promise<CrmDeal[]> {
     const [offers, details] = await Promise.all([
         db.offerDecision.findMany({
             where: { applicationId: { in: ids } },
-            select: { applicationId: true, rate: true, term: true, refinanceAmount: true, repayPerPeriod: true },
+            select: {
+                applicationId: true,
+                rate: true,
+                term: true,
+                refinanceAmount: true,
+                repayPerPeriod: true,
+                fees: true,
+                offer: true,
+                totalRemit: true,
+            },
         }),
         db.applicationSyndicatorDetails.findMany({
             where: { applicationId: { in: ids } },
@@ -407,6 +477,10 @@ async function loadCrmDeals(db: Db): Promise<CrmDeal[]> {
             term: offer?.term ?? null,
             refinanceAmount: num(offer?.refinanceAmount),
             repayPerPeriod: num(offer?.repayPerPeriod),
+            fees: num(offer?.fees),
+            offer: num(offer?.offer),
+            totalRemit: num(offer?.totalRemit),
+            currentQueue: a.currentQueue ?? null,
             syndicators: (detailsByApp.get(a.id) ?? []).map((d) => ({
                 syndicatorId: d.syndicatorId,
                 name: d.syndicatorName ?? String(d.syndicatorId),
@@ -535,7 +609,8 @@ function planDeal(
     const f = deal.fields;
     const type = mapApplicationType(f.type).value;
     const status = mapApplicationStatus(f.status).value;
-    const rate = parseMoneyToNumber(f.rate);
+    // Same parsing the import stores with, so a stored rate compares equal on the next sync.
+    const rate = parseRateToNumber(f.rate);
     const commission = parseMoneyToNumber(f.commission);
     const refi = parseMoneyToNumber(f.refinanceAmount);
     const daily = parseMoneyToNumber(f.repayPerPeriod);
@@ -583,6 +658,7 @@ function planDeal(
             offer: f.offer ?? '',
             rate: f.rate ?? '',
             commission: f.commission ?? '',
+            fees: f.fees ?? '',
             iso: f.iso ?? '',
             term: f.term ?? '',
             repayPerPeriod: f.repayPerPeriod ?? '',
@@ -606,10 +682,19 @@ function planDeal(
     ingestRow.dealName = crm.name || deal.dealName;
     if (match.setDealId) plan.changes.push({ field: 'dealId', from: crm.dealId, to: deal.dealId });
 
+    let ingestNeeded = false;
     const change = (field: string, from: unknown, to: unknown, ingestKey: string, ingestValue: unknown) => {
         plan.changes.push({ field, from, to });
         ingestRow[ingestKey] = ingestValue;
+        ingestNeeded = true;
     };
+
+    // Every deal on the sheet is a live/funded book deal, so it must be listed on All Deals.
+    if (!ALL_DEALS_QUEUES.has(text(crm.currentQueue).toLowerCase())) {
+        plan.moveToFunded = true;
+        plan.changes.push({ field: 'queue', from: crm.currentQueue, to: 'Funded' });
+    }
+    const fees = parseMoneyToNumber(f.fees);
 
     if (status && status !== crm.status) {
         const from = crm.status ? STATUS_RANK[crm.status] : undefined;
@@ -627,6 +712,16 @@ function planDeal(
     if (rate !== null && (crm.rate === null || Math.abs(crm.rate - rate) > 0.0001)) change('rate', crm.rate, rate, 'rate', f.rate);
     if (commission !== null && (crm.commissionAmount === null || Math.abs(crm.commissionAmount - commission) > MONEY_TOLERANCE)) {
         change('commission', crm.commissionAmount, commission, 'commission', f.commission);
+    }
+    if (fees !== null && (crm.fees === null || Math.abs(crm.fees - fees) > MONEY_TOLERANCE)) {
+        change('fees', crm.fees, fees, 'fees', f.fees);
+    }
+    if (crm.totalRemit === null) {
+        const payback = paybackFrom(crm.offer ?? crm.loanAmount ?? deal.funded, rate ?? crm.rate);
+        if (payback !== null) {
+            plan.setPayback = payback;
+            plan.changes.push({ field: 'payback', from: null, to: payback });
+        }
     }
     if (refi !== null && refi !== 0 && (crm.refinanceAmount === null || Math.abs(crm.refinanceAmount - refi) > MONEY_TOLERANCE)) {
         change('refinanceAmount', crm.refinanceAmount, refi, 'refinanceAmount', f.refinanceAmount);
@@ -654,6 +749,7 @@ function planDeal(
             plan.fillSyndicators = split;
             plan.changes.push({ field: 'syndicators', from: null, to: describeSplit(split) });
             ingestRow.__syndicators = { allocations: split, issue: null } satisfies ParsedRowSyndicators;
+            ingestNeeded = true;
         } else if (describeSplit(split) !== describeSplit(crm.syndicators)) {
             plan.kept.push(`syndicators kept (CRM ${describeSplit(crm.syndicators)}; sheet ${describeSplit(split)})`);
             differentSplits.push({ dealId: deal.dealId, sheet: describeSplit(split), crm: describeSplit(crm.syndicators) });
@@ -661,7 +757,8 @@ function planDeal(
     }
 
     plan.action = plan.changes.length ? 'update' : 'unchanged';
-    if (plan.action === 'unchanged') delete plan.ingestRow;
+    // Queue / payback / Deal ID fixes are applied directly; only field changes go through the import.
+    if (!ingestNeeded) delete plan.ingestRow;
     return plan;
 }
 
@@ -737,6 +834,7 @@ async function planPayments(
 /** Reads the sheet tabs and the CRM; writes nothing. Run it inside a read-only transaction. */
 export async function planSheetSync(db: Db, tabs: SheetTabs, config: SheetSyncConfig): Promise<SheetSyncPlan> {
     const { deals, syndicatorColumns, notes } = parseDealsTab(tabs[config.dealsTab] ?? [], config);
+    applySupplementTab(deals, config.supplementTab ? tabs[config.supplementTab.name] : undefined, config, notes);
     const payments = parsePaymentsTab(tabs[config.paymentsTab] ?? [], config);
     const crm = await loadCrmDeals(db);
     const { mapped, unknown } = await mapSyndicatorColumns(db, syndicatorColumns, config);
@@ -780,10 +878,26 @@ export async function planSheetSync(db: Db, tabs: SheetTabs, config: SheetSyncCo
         );
     }
 
+    // Ledger entries attach to deals the sync keeps; commission owed comes from the deals tab.
+    const sheetDealById = new Map(deals.map((d) => [d.dealId, d]));
+    const ledgerDeals = new Map<string, { commissionOwed: number | null }>();
+    for (const d of dealPlans) {
+        if (!d.dealId || d.action === 'conflict') continue;
+        ledgerDeals.set(d.dealId, { commissionOwed: parseMoneyToNumber(sheetDealById.get(d.dealId)?.fields.commission) });
+    }
+    const ledger = await planLedger(
+        db,
+        config.ledgerTab ? tabs[config.ledgerTab.name] : undefined,
+        config,
+        ledgerDeals,
+        notes,
+    );
+
     return {
         generatedAt: new Date().toISOString(),
         deals: dealPlans,
         dealCounts,
+        ledger,
         payments: await planPayments(db, payments, dealPlans, crm),
         syndicators: {
             columns: syndicatorColumns,
@@ -803,6 +917,9 @@ export async function planSheetSync(db: Db, tabs: SheetTabs, config: SheetSyncCo
 export type SheetSyncApplyResult = {
     deals: BulkImportSummary | null;
     dealIdsSet: number;
+    dealsMovedToFunded: number;
+    paybacksSet: number;
+    ledger: LedgerApplyResult | null;
     paymentsAdded: number;
     paymentsSkippedAsDuplicate: number;
     paymentErrors: string[];
@@ -813,6 +930,9 @@ export async function applySheetSync(plan: SheetSyncPlan, actorUserId: string): 
     const result: SheetSyncApplyResult = {
         deals: null,
         dealIdsSet: 0,
+        dealsMovedToFunded: 0,
+        paybacksSet: 0,
+        ledger: null,
         paymentsAdded: 0,
         paymentsSkippedAsDuplicate: 0,
         paymentErrors: [],
@@ -824,6 +944,26 @@ export async function applySheetSync(plan: SheetSyncPlan, actorUserId: string): 
         if (!d.setDealId || !d.crmApplicationId) continue;
         await prisma.application.update({ where: { id: d.crmApplicationId }, data: { dealId: d.dealId } });
         result.dealIdsSet += 1;
+    }
+
+    // Sheet deals parked in another queue: list them on All Deals.
+    for (const d of plan.deals) {
+        if (!d.moveToFunded || !d.crmApplicationId || d.action === 'conflict') continue;
+        await prisma.application.update({
+            where: { id: d.crmApplicationId },
+            data: { currentQueue: 'Funded', currentState: 'FUNDED' },
+        });
+        result.dealsMovedToFunded += 1;
+    }
+
+    // Missing payback (totalRemit) makes the dashboard balance read 0; only ever fills an empty value.
+    for (const d of plan.deals) {
+        if (d.setPayback === undefined || !d.crmApplicationId || d.action === 'conflict') continue;
+        const { count } = await prisma.offerDecision.updateMany({
+            where: { applicationId: d.crmApplicationId, totalRemit: null },
+            data: { totalRemit: d.setPayback },
+        });
+        result.paybacksSet += count;
     }
 
     const ingestRows = plan.deals.filter((d) => d.ingestRow && (d.action === 'create' || d.action === 'update'));
@@ -838,6 +978,9 @@ export async function applySheetSync(plan: SheetSyncPlan, actorUserId: string): 
             { syndicatorColumns: syndicatorNames },
         );
     }
+
+    // Deals exist now (created above), so every ledger Deal ID resolves.
+    result.ledger = await applyLedger(plan.ledger);
 
     if (!plan.payments.toAdd.length) return result;
 

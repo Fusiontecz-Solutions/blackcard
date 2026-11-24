@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import prisma from '../../config/prismaClient';
-import { BLACKCARD_SHEET_SYNC_CONFIG as config } from './sheetSyncConfig';
+import { BLACKCARD_SHEET_SYNC_CONFIG as config, readSheetTabNames, requiredSheetTabs } from './sheetSyncConfig';
 import { readSheetTabs, type SheetTabs } from './sheetSource';
 import { planSheetSync, applySheetSync, type SheetSyncPlan, type SheetSyncApplyResult } from './sheetSyncService';
 
@@ -64,6 +64,18 @@ function summarize(plan: SheetSyncPlan) {
             toAddTotal: Math.round(p.toAdd.reduce((s, x) => s + x.amount, 0) * 100) / 100,
             unmatched: p.unmatched.slice(0, 50),
             unmatchedCount: p.unmatched.length,
+        },
+        ledger: {
+            synced: plan.ledger.enabled,
+            sheetRows: plan.ledger.sheetRows,
+            alreadyInCrm: plan.ledger.alreadyInCrm,
+            toAdd: plan.ledger.toAdd.length,
+            toRemove: plan.ledger.toRemove.length,
+            fundingWired: plan.ledger.totals.fundingWired,
+            commissionPaid: plan.ledger.totals.commissionPaid,
+            commissionFullyPaidDeals: plan.ledger.commissionPaid.length,
+            unmatched: plan.ledger.unmatched.slice(0, 50),
+            unmatchedCount: plan.ledger.unmatched.length,
         },
         syndicators: {
             mapped: plan.syndicators.mapped,
@@ -135,11 +147,11 @@ export function startSheetSyncRun(source: SyncRun['source'], loadTabs: () => Pro
     return run;
 }
 
-/** Tabs pushed in a request body (Apps Script), limited to the two the sync reads. */
+/** Tabs pushed in a request body (Apps Script), limited to the ones the sync reads. */
 export function startPushedSheetSync(tabs: SheetTabs, dryRun: boolean): SyncRun | null {
     return startSheetSyncRun(
         'push',
-        async () => ({ [config.dealsTab]: tabs[config.dealsTab], [config.paymentsTab]: tabs[config.paymentsTab] }),
+        async () => Object.fromEntries(readSheetTabNames(config).filter((n) => Array.isArray(tabs[n])).map((n) => [n, tabs[n]])),
         dryRun,
     );
 }
@@ -150,9 +162,10 @@ export function startLinkSheetSync(dryRun: boolean): SyncRun | null {
     if (!spreadsheetId) throw new Error('SHEET_SYNC_SHEET_ID is not set.');
     return startSheetSyncRun(
         'link',
-        () => readSheetTabs({ kind: 'link', spreadsheetId }, [config.dealsTab, config.paymentsTab]),
+        () => readSheetTabs({ kind: 'link', spreadsheetId }, readSheetTabNames(config)),
         dryRun,
     );
 }
 
-export const sheetSyncTabNames = (): string[] => [config.dealsTab, config.paymentsTab];
+/** Tabs a push must include; the supplement tab is optional. */
+export const sheetSyncTabNames = (): string[] => requiredSheetTabs(config);
